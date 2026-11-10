@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+
+# Build and test output
+dist/
+build/
+coverage/
+.nyc_output/
+*.tsbuildinfo
+
+# Local environment variables
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Logs and local runtime files
+*.log
+*.pid
+*.pid.lock
+
+# Tool caches
+.cache/
+.vite/
+.eslintcache
+
+# Editor and OS files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+Desktop.ini
