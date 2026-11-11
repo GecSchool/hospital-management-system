@@ -29,6 +29,12 @@ npm run dev:backend   # http://localhost:3000
 
 개발 중 프론트엔드의 `/api` 요청은 백엔드로 전달됩니다. 서버 상태는 `/api/health`에서 확인할 수 있습니다. 루트에서 `npm run build`를 실행하면 두 프로젝트의 타입을 검사하고 빌드합니다.
 
+## API 명세
+
+백엔드 서버를 실행한 뒤 [Swagger UI](http://localhost:3000/api-docs/)에서 API 목록과 요청·응답 스키마를 확인할 수 있습니다. 명세 원본은 `backend/openapi.yaml`이며, 서버에서도 `/api-docs/openapi.yaml`로 제공합니다.
+
+현재 명세는 업무 규칙과 화면을 토대로 작성한 **초안**입니다. Swagger UI에 표시되는 업무 API가 구현되었다는 뜻은 아닙니다. 구현되지 않은 API는 문서의 요청 실행 기능으로 호출할 수 없습니다. 세션 쿠키 이름, CSRF 설정, 일부 응답 필드와 미결 업무 정책은 구현 전에 팀에서 확정해야 합니다.
+
 ## 디렉터리 구성
 
 - `frontend/`: React와 TypeScript를 사용하는 웹 화면
