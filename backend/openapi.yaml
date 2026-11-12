@@ -52,8 +52,7 @@ info:
 
     1. **진료 중 추가 호출:** 같은 의사가 진료 중일 때 호출을 차단한다. 입실 확인에서도 동시 진료 금지 규칙을 검증한다.
 
-    2. **접수 삭제 세부:** 간호 기록이 있거나 진료가 시작된 접수는 삭제 불가. 호출됨 상태도 이 조건을 만족하면 삭제할 수 있고 호출이 해제된다. 물리 삭제/취소 이력 보존 방식은
-    미정.
+    2. **접수 삭제 세부:** 간호 기록이 있거나 진료가 시작된 접수는 삭제 불가. 호출됨 상태도 이 조건을 만족하면 삭제할 수 있고 호출이 해제된다. 삭제된 접수는 목록·환자 이력에 표시하지 않는다. 물리 삭제 여부 등 내부 저장 방식은 미정.
 
     3. **간호 기록 시간 범위:** 같은 환자의 같은 과 기록은 선택 접수의 전후를 모두 조회한다. 선택 접수 표시와 새 기록의 연결 대상은 해당 `receptionId`를 기준으로 한다.
 
@@ -2244,160 +2243,6 @@ paths:
                   type: string
                   format: password
                 phone: *a1
-  /patients/{patientId}/appointments:
-    get:
-      tags:
-        - 환자
-      operationId: PAT_05
-      summary: 환자 예약 이력
-      description: |-
-        **권한:** STAFF
-
-        **원본 계약:** `page?`, `size?` → `Appointment[]`
-
-        **업무 규칙:** 환자 상세 예약 이력.
-      parameters:
-        - name: patientId
-          in: path
-          required: true
-          schema: *a2
-        - name: page
-          in: query
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-          description: "기본값 제안: 1"
-        - name: size
-          in: query
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-          description: "기본값 제안: 20"
-      responses:
-        "200":
-          description: 성공
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/StaffAppointment"
-                  meta:
-                    $ref: "#/components/schemas/PageMeta"
-                required:
-                  - data
-                  - meta
-        "400":
-          description: 입력 형식 오류
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-        "401":
-          description: 인증 필요 또는 실패
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-        "403":
-          description: 권한 또는 상태 제한
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-        "500":
-          description: 서버 오류
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-      x-response-data-schema-by-role:
-        STAFF:
-          type: array
-          items:
-            $ref: "#/components/schemas/StaffAppointment"
-  /patients/{patientId}/receptions:
-    get:
-      tags:
-        - 환자
-      operationId: PAT_06
-      summary: 환자 접수 이력
-      description: |-
-        **권한:** STAFF
-
-        **원본 계약:** `page?`, `size?` → `Reception[]`
-
-        **업무 규칙:** 환자 상세 접수 이력.
-      parameters:
-        - name: patientId
-          in: path
-          required: true
-          schema: *a2
-        - name: page
-          in: query
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-          description: "기본값 제안: 1"
-        - name: size
-          in: query
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-          description: "기본값 제안: 20"
-      responses:
-        "200":
-          description: 성공
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/StaffReception"
-                  meta:
-                    $ref: "#/components/schemas/PageMeta"
-                required:
-                  - data
-                  - meta
-        "400":
-          description: 입력 형식 오류
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-        "401":
-          description: 인증 필요 또는 실패
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-        "403":
-          description: 권한 또는 상태 제한
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-        "500":
-          description: 서버 오류
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-      x-response-data-schema-by-role:
-        STAFF:
-          type: array
-          items:
-            $ref: "#/components/schemas/StaffReception"
   /patients/{patientId}/visits:
     get:
       tags:
@@ -2573,12 +2418,18 @@ paths:
         **권한:** STAFF, NURSE(본인 과)
 
 
-        **원본 계약:** `patientName?`, `date?`, `departmentId?`, `doctorId?`, `status?`, `page?`, `size?` →
-        `Appointment[]`
+        **원본 계약:** `patientId?`, `patientName?`, `date?`, `departmentId?`, `doctorId?`, `status?`, `page?`, `size?` → `Appointment[]`
 
 
-        **업무 규칙:** `status`는 화면용 `displayStatus` 필터. 간호사는 본인 과 조회만 가능하며 변경·취소 불가.
+        **업무 규칙:** `patientId`는 환자 ID 정확 일치로 환자 예약 이력 조회에 사용한다. 입력된 조건을 함께 적용한다. `status`는 화면용 `displayStatus` 필터다. 간호사는 환자 ID를 지정해도 본인 과 조회만 가능하며 변경·취소할 수 없다.
       parameters:
+        - name: patientId
+          in: query
+          required: false
+          description: 환자 ID 정확 일치; 환자 상세 예약 이력 조회에 사용.
+          schema:
+            type: string
+            minLength: 1
         - name: patientName
           in: query
           required: false
@@ -3085,17 +2936,23 @@ paths:
         **권한:** STAFF, NURSE
 
 
-        **원본 계약:** `date`, `departmentId?`, `doctorId?`, `name?`, `birthDate?`, `status?`, `page?`, `size?` →
-        `Reception[]`
+        **원본 계약:** `date?`, `patientId?`, `departmentId?`, `doctorId?`, `name?`, `birthDate?`, `status?`, `page?`, `size?` → `Reception[]`
 
 
-        **업무 규칙:** 간호사는 본인 과 접수만 조회. `status`는 화면용 `displayStatus`; 접수 완료 필터에 호출·진료 중·완료는 포함하지 않음. 과거 날짜 조회
-        가능.
+        **업무 규칙:** `date` 또는 `patientId` 중 하나 이상 필수이며 둘 다 없거나 빈 값만 있으면 `400 VALIDATION_ERROR`를 반환한다. 둘 다 있으면 함께 적용한다. `patientId`는 환자 ID 정확 일치로 환자 접수 이력 조회에 사용한다. 삭제된 접수는 목록과 이력에서 제외한다. 간호사는 환자 ID를 지정해도 본인 과 접수만 조회한다. `status`는 화면용 `displayStatus`이며 접수 완료 필터에 호출·진료 중·완료는 포함하지 않는다. 과거 날짜 조회가 가능하다.
       parameters:
         - name: date
           in: query
-          required: true
+          required: false
+          description: 환자 ID와 함께 또는 단독으로 지정; date와 patientId 중 하나 이상 필수.
           schema: *a4
+        - name: patientId
+          in: query
+          required: false
+          description: 환자 ID 정확 일치; date와 patientId 중 하나 이상 필수.
+          schema:
+            type: string
+            minLength: 1
         - name: departmentId
           in: query
           required: false
@@ -3267,7 +3124,7 @@ paths:
 
 
         **업무 규칙:** 간호 기록이 있으면 `409 RECEPTION_HAS_NURSING_RECORDS`. 진료 시작 후 삭제 불가 `409 VISIT_ALREADY_STARTED`.
-        삭제 시 예약은 보존하고 현재 유효 접수에서 제외. 호출된 접수도 간호 기록이 없고 진료가 시작되지 않았다면 삭제 가능하며 해당 호출은 해제된다. 물리 삭제/이력 보존 방식은 §12.
+        삭제 시 예약은 보존하고 삭제된 접수는 목록·환자 이력과 현재 유효 접수에서 제외한다. 호출된 접수도 간호 기록이 없고 진료가 시작되지 않았다면 삭제 가능하며 해당 호출은 해제된다. 물리적 저장 방식은 §12.
       parameters:
         - name: receptionId
           in: path
