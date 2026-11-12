@@ -33,6 +33,8 @@ npm run dev:backend   # http://localhost:3000
 
 백엔드 서버를 실행한 뒤 [Swagger UI](http://localhost:3000/api-docs/)에서 API 목록과 요청·응답 스키마를 확인할 수 있습니다. 명세 원본은 `backend/openapi.yaml`이며, 서버에서도 `/api-docs/openapi.yaml`로 제공합니다.
 
+업무별 API 설명은 [API 명세 초안](docs/api-spec.md), 공통으로 구현할 업무 로직은 [백엔드 공통 구현 가이드](docs/backend-shared-logic.md)를 참고하세요.
+
 현재 명세는 업무 규칙과 화면을 토대로 작성한 **초안**입니다. Swagger UI에 표시되는 업무 API가 구현되었다는 뜻은 아닙니다. 구현되지 않은 API는 문서의 요청 실행 기능으로 호출할 수 없습니다. 세션 쿠키 이름, CSRF 설정, 일부 응답 필드와 미결 업무 정책은 구현 전에 팀에서 확정해야 합니다.
 
 ## 디렉터리 구성
