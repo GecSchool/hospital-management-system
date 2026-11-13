@@ -4,6 +4,12 @@ import * as medicalStaffController from '../controllers/medical-staff.controller
 
 export const medicalStaffRouter = Router();
 
+medicalStaffRouter.patch(
+  '/medical-staff/:accountId/department',
+  requireAccount,
+  requireRole('ADMIN'),
+  medicalStaffController.changeDepartment,
+);
 medicalStaffRouter.get(
   '/departments/:departmentId/medical-staff',
   requireAccount,

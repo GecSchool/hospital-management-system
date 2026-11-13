@@ -1,2 +1,6 @@
-// 예정: ACC-04 계정 상태 변경. 미구현이며 라우터에 등록하지 않았습니다.
-export {};
+import { Router } from 'express';
+import { requireAccount, requireRole } from '../../../common/middlewares/auth.js';
+import { changeStatus } from '../controllers/account-status.controller.js';
+
+export const accountStatusRouter = Router();
+accountStatusRouter.patch('/:accountId/status', requireAccount, requireRole('ADMIN'), changeStatus);
