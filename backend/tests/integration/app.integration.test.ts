@@ -33,7 +33,9 @@ describe('HTTP 서버 준비 상태', () => {
 
   it('허용된 출처에만 쿠키를 포함한 CORS를 허용한다', async () => {
     const fixture = createApp({ port: 3000, corsOrigin: 'http://localhost:5173' });
-    const allowed = await request(fixture).get('/api/health').set('Origin', 'http://localhost:5173');
+    const allowed = await request(fixture)
+      .get('/api/health')
+      .set('Origin', 'http://localhost:5173');
     expect(allowed.headers['access-control-allow-origin']).toBe('http://localhost:5173');
     expect(allowed.headers['access-control-allow-credentials']).toBe('true');
     const denied = await request(fixture).get('/api/health').set('Origin', 'http://other.test');

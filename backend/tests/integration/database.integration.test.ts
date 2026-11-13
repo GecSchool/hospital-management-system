@@ -16,8 +16,12 @@ describe('초기 마이그레이션', () => {
     if (client) await client.end();
   });
 
-  beforeEach(async () => { await client.query('BEGIN'); });
-  afterEach(async () => { await client.query('ROLLBACK'); });
+  beforeEach(async () => {
+    await client.query('BEGIN');
+  });
+  afterEach(async () => {
+    await client.query('ROLLBACK');
+  });
 
   it('테스트 DB에 수동 제약과 예약 부분 유일 인덱스가 적용되어 있다', async () => {
     const { rows } = await client.query(`
@@ -41,10 +45,15 @@ describe('초기 마이그레이션', () => {
     const args = [patientId, doctorId, departmentId, staffId];
     await client.query(insert, ['appointment_1', ...args]);
     await client.query('SAVEPOINT duplicate_check');
-    await expect(client.query(insert, ['appointment_2', ...args])).rejects.toMatchObject({ code: '23505' });
+    await expect(client.query(insert, ['appointment_2', ...args])).rejects.toMatchObject({
+      code: '23505',
+    });
     await client.query('ROLLBACK TO SAVEPOINT duplicate_check');
-    await client.query(`UPDATE appointments SET status = 'CANCELLED', cancelled_at = now(),
-      cancelled_by_account_id = $1 WHERE id = 'appointment_1'`, [staffId]);
+    await client.query(
+      `UPDATE appointments SET status = 'CANCELLED', cancelled_at = now(),
+      cancelled_by_account_id = $1 WHERE id = 'appointment_1'`,
+      [staffId],
+    );
     await expect(client.query(insert, ['appointment_2', ...args])).resolves.toBeDefined();
   });
 });

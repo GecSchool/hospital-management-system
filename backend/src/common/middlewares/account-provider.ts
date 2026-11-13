@@ -14,11 +14,21 @@ export function createAccountProvider(
     if (!id) return null;
     const account = await getDatabase().account.findUnique({
       where: { id },
-      select: { id: true, role: true, status: true, doctor: { select: { departmentId: true } }, nurse: { select: { departmentId: true } } },
+      select: {
+        id: true,
+        role: true,
+        status: true,
+        doctor: { select: { departmentId: true } },
+        nurse: { select: { departmentId: true } },
+      },
     });
     if (!account) return null;
-    const departmentId = account.role === 'DOCTOR' ? account.doctor?.departmentId ?? null
-      : account.role === 'NURSE' ? account.nurse?.departmentId ?? null : null;
+    const departmentId =
+      account.role === 'DOCTOR'
+        ? (account.doctor?.departmentId ?? null)
+        : account.role === 'NURSE'
+          ? (account.nurse?.departmentId ?? null)
+          : null;
     return { id: account.id, role: account.role, status: account.status, departmentId };
   };
 }

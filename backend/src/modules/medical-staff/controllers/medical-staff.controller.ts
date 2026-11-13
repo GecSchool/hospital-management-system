@@ -3,11 +3,18 @@ import { AppError } from '../../../common/errors/index.js';
 import type { AccountContext } from '../../../common/middlewares/auth.js';
 import { sendData } from '../../../common/responses/index.js';
 import * as medicalStaffService from '../services/medical-staff.service.js';
-import { parseDepartmentId, parseDoctorsQuery, parseMedicalStaffQuery } from '../validations/medical-staff.validation.js';
+import {
+  parseDepartmentId,
+  parseDoctorsQuery,
+  parseMedicalStaffQuery,
+} from '../validations/medical-staff.validation.js';
 
 export const listMedicalStaff: RequestHandler = async (req, res) => {
   const departmentId = parseDepartmentId(req.params.departmentId);
-  const result = await medicalStaffService.listMedicalStaff(departmentId, parseMedicalStaffQuery(req.query));
+  const result = await medicalStaffService.listMedicalStaff(
+    departmentId,
+    parseMedicalStaffQuery(req.query),
+  );
   sendData(res, result.data, 200, result.meta);
 };
 
