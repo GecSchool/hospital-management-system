@@ -35,6 +35,19 @@ npm run dev:backend   # http://localhost:3000
 
 업무별 API 설명은 [API 명세 초안](docs/api-spec.md), 공통으로 구현할 업무 로직은 [백엔드 공통 구현 가이드](docs/backend-shared-logic.md)를 참고하세요.
 
+## 데이터베이스 모델
+
+Prisma 스키마와 초기 PostgreSQL 마이그레이션은 `backend/prisma/`에 있습니다. 설정과 제약조건, 아직 구현이 필요한 사항은 [데이터베이스 모델 가이드](docs/database-model.md)를 참고하세요.
+
+개발용 DB를 준비하고 `backend/.env.example`을 참고해 `backend/.env`에 `DATABASE_URL`을 설정한 뒤 저장소 루트에서 실행합니다.
+
+```bash
+npm run prisma:generate --workspace backend
+npm run db:deploy --workspace backend
+```
+
+새 스키마 변경은 `npm run db:migrate --workspace backend -- --name 변경명`으로 마이그레이션을 생성하고 SQL을 검토해 버전 관리합니다. 기존 공유·운영 DB에 적용하기 전에는 데이터와 마이그레이션 이력을 먼저 확인하세요.
+
 현재 명세는 업무 규칙과 화면을 토대로 작성한 **초안**입니다. Swagger UI에 표시되는 업무 API가 구현되었다는 뜻은 아닙니다. 구현되지 않은 API는 문서의 요청 실행 기능으로 호출할 수 없습니다. 세션 쿠키 이름, CSRF 설정, 일부 응답 필드와 미결 업무 정책은 구현 전에 팀에서 확정해야 합니다.
 
 ## 디렉터리 구성
@@ -44,7 +57,7 @@ npm run dev:backend   # http://localhost:3000
 
 ## 개발 현황
 
-프로젝트 초기 준비 단계입니다. PostgreSQL 연동과 실제 업무 기능은 API 명세 및 데이터 모델을 정리한 뒤 구현할 예정입니다.
+프로젝트 초기 준비 단계입니다. DB 스키마와 마이그레이션을 작성했으며, 실제 업무 API와 주민등록번호 보호 처리 등은 아직 구현하지 않았습니다.
 
 ## 커밋 컨벤션
 

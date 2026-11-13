@@ -25,7 +25,7 @@
 
 | 타입 | 계약 |
 |---|---|
-| ID | JSON 문자열. 구체적인 UUID/숫자 형식은 논리 모델 확정 시 결정하며 클라이언트는 값을 해석하지 않는다. |
+| ID | JSON 문자열. 클라이언트는 값을 해석하지 않는다. `doctorId`와 `DoctorSummary.id`는 별도 의사 ID가 아닌 의사의 계정 ID와 같은 값이다. |
 | 날짜 | `YYYY-MM-DD`; 병원 업무 날짜는 `Asia/Seoul` 기준. |
 | 시각 | `HH:mm`, 예: `09:20`. 진료 가능 시간과 예약은 20분 단위. 진료 가능 시간의 종료 경계에 한해 `24:00`을 허용한다. |
 | 요일 | 0~6의 정수: 일요일 0, 월요일 1, 화요일 2, 수요일 3, 목요일 4, 금요일 5, 토요일 6. 병원 업무 시간대 `Asia/Seoul` 기준. |
@@ -77,7 +77,7 @@
 | 계정 | `ACTIVE`, `INACTIVE` | 활성, 비활성. 미수락 초대는 Redis의 초대 상태이지 활성 계정이 아니다. |
 | 진료과 | `ACTIVE`, `INACTIVE` | 활성, 비활성. 비활성은 신규 예약·현장 접수·소속 선택 불가. |
 | 예약 | `BOOKED`, `CANCELLED` | 예약, 취소. 접수·진료 진행은 연결된 접수/진료에서 조회한다. 화면에 필요한 통합 표시는 서버가 합성할 수 있다. |
-| 접수 | `REGISTERED`, `CALLED`, `CANCELLED` | 접수 완료, 호출됨, 접수 삭제/취소. 입실 확인 후 진료 상태로 진행을 표시한다. `CANCELLED` 보존 방식은 §12. |
+| 접수 | `REGISTERED`, `CALLED` | 접수 완료, 호출됨. 입실 확인 후 진료 상태로 진행을 표시한다. 삭제된 접수는 물리적으로 제거한다. |
 | 진료 | `IN_PROGRESS`, `COMPLETED` | 진료 중, 진료 완료. 간호사의 입실 확인 시 `IN_PROGRESS` 생성, 의사 기록 완료 시 `COMPLETED`. |
 | 기록 버전 | `versionNo=1`, `versionNo>1` | 원본, 정정. 원본의 `correctionReason`은 `null`, 정정은 필수. |
 
@@ -95,8 +95,8 @@
 | `Appointment` | `id`, `patient: PatientSummary`, `doctor: DoctorSummary`, `department: DepartmentSummary`, `startsAt`, `status`, `displayStatus`, `registeredBy: AccountSummary`, `receptionId?`(현재 유효한 접수만), `cancelledAt?` |
 | `Reception` | `id`, `patient: PatientSummary`, `department: DepartmentSummary`, `doctor: DoctorSummary`, `appointmentId?`, `receivedAt`, `status`, `displayStatus`, `visitId?`, `visitStatus?` |
 | `Visit` | `id`, `receptionId`, `patient: PatientSummary`, `department: DepartmentSummary`, `doctor: DoctorSummary`, `status`, `startedAt`, `completedAt?`, `clinicalRecordId?`. `doctor`/`department`는 접수에서 읽은 응답 필드다. |
-| `ClinicalRecordVersion` | `id`, `recordId`, `versionNo`, `symptoms`, `diagnosis`, `opinion`, `correctionReason?`, `author: AccountSummary`, `createdAt` |
-| `NursingRecordVersion` | `id`, `recordId`, `versionNo`, `content`, `correctionReason?`, `author: AccountSummary`, `createdAt` |
+| `ClinicalRecordVersion` | `recordId`, `versionNo`, `symptoms`, `diagnosis`, `opinion`, `correctionReason?`, `author: AccountSummary`, `createdAt` |
+| `NursingRecordVersion` | `recordId`, `versionNo`, `content`, `correctionReason?`, `author: AccountSummary`, `createdAt` |
 | `NursingRecord` | `id`, `receptionId`, `author: AccountSummary`, `createdAt`, `latestVersion: NursingRecordVersion` |
 
 과거 진료 응답의 진료과는 담당 의사의 현재 소속이 아니라 해당 접수에 기록된 진료과를 기준으로 조회하며, 과 이름은 현재 이름을 표시한다. `DoctorSummary.department`는 현재 소속이므로 과거 진료과 대용으로 사용하지 않는다.
@@ -137,7 +137,7 @@
 | SCH-01 | `GET /doctors/{doctorId}/availability` | DOCTOR(본인), STAFF, NURSE(본인 과) | → `{doctorId,intervalMinutes:20,weeklySlots:[{dayOfWeek,startTime,endTime}]}` | 요일 0=일요일~6=토요일의 매주 반복 구간을 반환한다. 구간은 요일 숫자와 시작 시각 오름차순이며 연속 구간은 합쳐 반환한다. 간호사는 본인 과. 관리 기능의 관리자 접근은 §12. |
 | SCH-02 | `PUT /doctors/me/availability` | DOCTOR | `{weeklySlots:[{dayOfWeek,startTime,endTime}]}` → `200 {doctorId,intervalMinutes:20,weeklySlots:[...]}` | 본인의 주간 시간표 전체 교체. 앞으로 남은 유효 예약과 충돌하면 `409 AVAILABILITY_CONFLICT`이며 기존 시간표를 유지한다. 날짜·시간 경계 및 구간 규칙은 아래 참조. 성공 시 정규화된 전체 시간표를 반환한다. |
 | SCH-03 | `GET /doctors/{doctorId}/leaves` | DOCTOR(본인), STAFF, NURSE(본인 과) | query `from`, `to` → 휴진 목록 | 날짜 범위 필수. |
-| SCH-04 | `POST /doctors/me/leaves` | DOCTOR | `{date}` → `201 {id,date}` | 취소되지 않은 예약이 해당 날짜에 있으면 `409 LEAVE_HAS_BOOKING`; 중복 휴진 `409`. 일자 전체 휴진 기준. |
+| SCH-04 | `POST /doctors/me/leaves` | DOCTOR | `{date}` → `201 {date}` | 취소되지 않은 예약이 해당 날짜에 있으면 `409 LEAVE_HAS_BOOKING`; 중복 휴진 `409`. 일자 전체 휴진 기준. |
 | SCH-05 | `GET /doctors/{doctorId}/appointment-slots` | STAFF, NURSE(본인 과), DOCTOR(본인 재진) | query `date`, `excludeAppointmentId?` → `{date,intervalMinutes:20,slots:[{startsAt,available,reason?}]}` | 예약 변경 시 STAFF가 변경할 본인 대상 예약 ID를 전달하면 해당 예약만 점유 검사에서 제외. 예약의 의사와 경로 의사 일치 및 변경 권한·유효 상태를 서버에서 확인한다. 다른 예약·휴진·진료 가능 시간 제약은 그대로 적용. 일반 예약 조회는 생략. 같은 의사·날짜·시간의 유효 예약은 한 건만 가능. |
 
 
@@ -148,7 +148,7 @@
 - 시간 구간은 시작을 포함하고 종료를 제외한다(`[startTime,endTime)`). 시작과 종료는 20분 경계(`00`, `20`, `40`분)여야 하고 종료가 시작보다 늦어야 한다. 시작은 `00:00`~`23:40`, 종료는 `00:20`~`24:00`이며 `24:00`은 종료에만 허용한다. 날짜를 넘기는 구간은 요일별로 나눈다.
 - 같은 요일에서 겹치는 구간이나 중복 구간은 `400 VALIDATION_ERROR`로 거부한다. 서로 맞닿은 구간은 허용하고 서버가 하나로 합친다. 성공 응답과 조회 결과는 요일 숫자, 시작 시각의 오름차순으로 반환한다. 시간표에 없는 요일은 진료 가능 시간이 없다.
 - `PUT`은 보낸 배열로 의사의 전체 주간 시간표를 교체한다. 빈 배열은 모든 진료 가능 시간을 제거하는 요청이다. 저장 당시 앞으로 남은 취소되지 않은 예약을 새 시간표로 수용할 수 없으면 `409 AVAILABILITY_CONFLICT`를 반환하며 기존 시간표를 변경하지 않는다. 과거 예약은 충돌 검사에서 제외한다. 예약 등록과 시간표 변경이 동시에 실행되어도 이 규칙이 깨지지 않도록 같은 잠금 경계에서 검사·저장한다.
-- 논리적으로 의사 ID, 요일, 시작 시각, 종료 시각의 반복 구간을 PostgreSQL에 보관한다. 물리 테이블명과 구현 방식은 물리 모델에서 정한다. 시간표 조회·저장과 의사 일정의 `availability`는 이 동일한 구간 규칙을 사용한다.
+- 의사 계정 ID, 요일, 시작·종료 시각의 반복 구간을 PostgreSQL에 보관한다. 저장은 자정부터의 분으로 표현하며 종료 24:00은 1440이다. 휴진은 의사 계정 ID와 날짜를 복합키로 저장한다. 시간표 조회·저장과 의사 일정의 `availability`는 이 동일한 구간 규칙을 사용한다.
 
 예: 월요일 오전 9시~12시와 오후 1시~5시를 선택할 때 `PUT /doctors/me/availability` 요청 본문:
 
@@ -168,14 +168,14 @@
 | ID | 메서드 · 경로 | 권한 | 요청 / 성공 | 주요 실패·규칙 |
 |---|---|---|---|---|
 | PAT-01 | `GET /patients` | STAFF, NURSE | `name?`, `birthDate?`, `phone?`, `patientNumber?`, `page?`, `size?` → `PatientSummary[]` | 간호사는 예약 환자 선택 시 전체 환자를 이름·생년월일·연락처로 검색할 수 있음. 조건 생략 시 전체 첫 페이지. 간호사에게 환자번호 검색·표시는 제공하지 않음. 예약은 본인 과에만 등록 가능. |
-| PAT-02 | `POST /patients` | STAFF | `{name,residentNumber,phone,...}` → `201 PatientDetail` | 주민등록번호·연락처 형식과 중복 확인. 필수 추가 항목은 도메인 정의서 확정 후 지정. |
+| PAT-02 | `POST /patients` | STAFF | `{name,residentNumber,phone,...}` → `201 PatientDetail` | 주민등록번호·연락처 형식을 확인하며 주민등록번호 중복은 `409 RESIDENT_NUMBER_DUPLICATE`. 필수 추가 항목은 도메인 정의서 확정 후 지정. |
 | PAT-03 | `GET /patients/{patientId}` | STAFF, DOCTOR, NURSE | → 역할별 `PatientDetail` 또는 필요한 축소 정보 | 의사는 허용된 진료·예약 맥락에서만, 간호사는 허용된 본인 과 업무 맥락에서만 조회. |
-| PAT-04 | `PATCH /patients/{patientId}` | STAFF | `{name?,residentNumber?,phone?,...}` → `PatientDetail` | 응답은 마스킹. 변경하지 않을 주민등록번호는 필드를 생략하며 마스킹 문자열은 유효한 원본 입력이 아니다. 번호 변경 허용 정책은 §12. |
+| PAT-04 | `PATCH /patients/{patientId}` | STAFF | `{name?,residentNumber?,phone?,...}` → `PatientDetail` | 응답은 마스킹. 변경하지 않을 주민등록번호는 필드를 생략하며 마스킹 문자열은 유효한 원본 입력이 아니다. 번호 변경 허용 여부는 §12. 변경을 허용하는 경우 다른 환자와 중복되면 `409 RESIDENT_NUMBER_DUPLICATE`. |
 | PAT-07 | `GET /patients/{patientId}/visits` | STAFF | `page?`, `size?` → `[{visitId,patientId,department:{id,name},doctor:{id,name},completedAt,displayStatus}]` | 진료 본문 제외. 직원 재진 예약의 환자·진료과·의사 초기값에 사용; 이후 소속·활성 검사는 예약 시 다시 수행. |
 
 환자 상세 예약·접수 이력은 각각 `APT-02`, `REC-02`에 `patientId`를 전달해 조회한다.
 
-`residentNumber` 전송은 TLS 요청 본문으로만 허용하고 표시·로그에서는 마스킹한다. 저장·암호화·접근통제와 보존 방식은 구현 전에 별도로 설계한다. 실제 의료정보 대신 시연용 가상 데이터를 사용한다.
+`residentNumber` 전송은 TLS 요청 본문으로만 허용하고 표시·로그에서는 마스킹한다. 주민등록번호 중복을 막기 위해 동일 번호는 동일한 비밀키 기반 조회값으로 변환하여 유일성을 검사하고, 별도로 암호화된 값을 저장한다. 조회값 생성·암호화·키 관리와 변경 처리는 API 구현 전에 완성해야 한다. 실제 의료정보 대신 시연용 가상 데이터를 사용한다.
 
 ## 5. 예약
 
@@ -185,7 +185,7 @@
 | APT-02 | `GET /appointments` | STAFF, NURSE(본인 과) | `patientId?`, `patientName?`, `date?`, `departmentId?`, `doctorId?`, `status?`, `page?`, `size?` → `Appointment[]` | `patientId`는 환자 ID 정확 일치로 환자 예약 이력 조회에 사용. 입력된 조건을 함께 적용한다. `status`는 화면용 `displayStatus` 필터. 간호사는 환자 ID를 지정해도 본인 과 조회만 가능하며 변경·취소 불가. |
 | APT-03 | `GET /appointments/{appointmentId}` | STAFF, NURSE(본인 과), DOCTOR(본인 관련) | → `Appointment` | 역할·소속·담당 범위 검사. |
 | APT-04 | `PATCH /appointments/{appointmentId}/time` | STAFF | `{startsAt}` → `Appointment` | 유효 접수가 없는 예약만 변경. 기존 시각 그대로면 변경 없이 기존 예약 반환(새 이력 미생성); 동일 의사·시간 예약 한 건 제한과 동시성 검사; `409 SLOT_UNAVAILABLE`, 접수 후 `409 APPOINTMENT_ALREADY_RECEIVED`. |
-| APT-05 | `POST /appointments/{appointmentId}/cancel` | STAFF | `{reason?}` → `Appointment` | 유효 접수가 없는 예약만 취소; 접수 후 `409 APPOINTMENT_ALREADY_RECEIVED`. 취소자·시각 기록. |
+| APT-05 | `POST /appointments/{appointmentId}/cancel` | STAFF | 본문 없음 → `Appointment` | 유효 접수가 없는 예약만 취소; 접수 후 `409 APPOINTMENT_ALREADY_RECEIVED`. 취소 사유는 입력받지 않고 취소자·시각을 기록한다. |
 | APT-06 | `POST /visits/{visitId}/follow-up-appointments` | DOCTOR(해당 완료 진료 담당) | `{startsAt}` → `201 Appointment` | 진료 완료 후만 가능. 환자·의사·진료과는 진료→접수에서 결정하며 클라이언트가 선택·변경하지 않는다. 예약 시점에 진료 가능 시간, 휴진 및 동일 의사·시간의 유효 예약을 다시 검증하고 예약할 수 없으면 `409 SLOT_UNAVAILABLE`을 반환한다. 새 예약은 독립 예약이며 이전 진료 기록에 FK가 반드시 필요한 것은 아니다. |
 
 예약 변경 화면은 `APT-03`의 기존 시각을 선택 표시하고 값이 바뀌기 전에는 저장을 비활성화한다. 변경 대상 예약의 날짜에는 `SCH-05`에 `excludeAppointmentId`를 전달한다. 서버는 저장 시점에 점유 여부를 다시 검증한다.
@@ -199,7 +199,7 @@
 | REC-01 | `POST /receptions` | STAFF | 예약 `{appointmentId}` 또는 현장 `{patientId,departmentId,doctorId}` → `201 Reception` | 상호 배타. 예약 당일 접수만 허용. 동일 환자·의사·업무 날짜에 미완료 유효 접수가 있으면 `409 DUPLICATE_ACTIVE_RECEPTION`. 진료 완료 후 재접수 및 다른 의사 접수 가능. 취소 예약·동일 예약 유효 접수 중복 거부. 삭제 후 재접수 가능. |
 | REC-02 | `GET /receptions` | STAFF, NURSE | `date?`, `patientId?`, `departmentId?`, `doctorId?`, `name?`, `birthDate?`, `status?`, `page?`, `size?` → `Reception[]` | `date` 또는 `patientId` 중 하나 이상 필수; 둘 다 없거나 빈 값만 있으면 `400 VALIDATION_ERROR`. 둘 다 있으면 함께 적용. `patientId`는 환자 ID 정확 일치로 환자 접수 이력 조회에 사용. 삭제된 접수는 목록과 이력에서 제외. 간호사는 환자 ID를 지정해도 본인 과 접수만 조회. `status`는 화면용 `displayStatus`; 접수 완료 필터에 호출·진료 중·완료는 포함하지 않음. 과거 날짜 조회 가능. |
 | REC-03 | `GET /receptions/{receptionId}` | STAFF, NURSE(본인 과), DOCTOR(담당) | → `Reception` | 대상의 접수·진료 상태 및 권한 검사. |
-| REC-04 | `DELETE /receptions/{receptionId}` | STAFF | → `204` | 간호 기록이 있으면 `409 RECEPTION_HAS_NURSING_RECORDS`. 진료 시작 후 삭제 불가 `409 VISIT_ALREADY_STARTED`. 삭제 시 예약은 보존하고 삭제된 접수는 목록·환자 이력과 현재 유효 접수에서 제외한다. 호출된 접수도 간호 기록이 없고 진료가 시작되지 않았다면 삭제 가능하며 해당 호출은 해제된다. 물리적 저장 방식은 §12. |
+| REC-04 | `DELETE /receptions/{receptionId}` | STAFF | → `204` | 간호 기록이 있으면 `409 RECEPTION_HAS_NURSING_RECORDS`. 진료 시작 후 삭제 불가 `409 VISIT_ALREADY_STARTED`. 접수 행을 물리 삭제하며 예약은 보존한다. 삭제된 접수는 목록·환자 이력과 현재 유효 접수에서 제외한다. 호출된 접수도 간호 기록이 없고 진료가 시작되지 않았다면 삭제 가능하며 해당 호출은 해제된다. |
 | REC-05 | `POST /receptions/{receptionId}/call` | NURSE(본인 과) | → `200 {reception,previousCalledReceptionId}` | 접수 완료 환자를 `CALLED`로 변경. 같은 의사가 진료 중이면 호출 불가 `409 DOCTOR_BUSY`. 같은 의사의 기존 호출은 자동 해제해 `REGISTERED`로 되돌림; 다른 의사는 영향 없음. 확인·호출 교체는 원자적으로 처리. |
 | REC-07 | `POST /receptions/{receptionId}/confirm-entry` | NURSE(본인 과) | → `201 Visit` | `CALLED` 접수의 입실을 확인하고 `IN_PROGRESS` 진료 생성. 호출 교체와 동시 실행 시 현재 호출 상태 재검사; 동일 의사 동시 진료 금지 `409 DOCTOR_BUSY`. |
 
@@ -213,7 +213,7 @@
 | VIS-02 | `GET /visits/{visitId}` | DOCTOR(담당) | → `Visit` | 접수에서 환자·진료과·의사를 확인. |
 | VIS-03 | `GET /patients/{patientId}/clinical-history` | DOCTOR(본인 예약·접수 환자) | `limit?`, `before?` → 이력 요약 `[{visitId,receptionId,clinicalRecordId,department,doctor,completedAt,summary}]`, `nextBefore`, `hasMore` | 허용된 환자의 전체 완료 진료를 선택 날짜 제한 없이 반환하며, 다른 의사의 기록과 선택한 진료보다 나중의 기록도 포함한다. 날짜·고유 ID 기준 과거→현재 표시, 선택된 진료는 클라이언트가 `visitId`로 강조한다. 초진은 빈 배열. 예약·접수 완료에는 오늘 기록을 생성하지 않는다. |
 | VIS-04 | `POST /visits/{visitId}/complete` | DOCTOR(담당) | `{symptoms,diagnosis,opinion}` → `200 {visit,record,version}` | `IN_PROGRESS`만 가능. 진료 기록과 원본 버전 1 생성, 진료 완료를 원자적으로 처리. 중복 완료 `409 VISIT_ALREADY_COMPLETED`. 별도 임시 저장 API 없음. |
-| VIS-05 | `GET /clinical-records/{recordId}` | DOCTOR(허용 범위) | → `{id,visitId,latestVersion,versions:[{id,versionNo,author,createdAt}]}` | 기본 최신. 기록은 진료를, 진료는 접수를 거쳐 담당 의사/환자를 확인한다. |
+| VIS-05 | `GET /clinical-records/{recordId}` | DOCTOR(허용 범위) | → `{id,visitId,latestVersion,versions:[{versionNo,author,createdAt}]}` | 기본 최신. 기록은 진료를, 진료는 접수를 거쳐 담당 의사/환자를 확인한다. |
 | VIS-06 | `GET /clinical-records/{recordId}/versions/{versionNo}` | DOCTOR(허용 범위) | → `ClinicalRecordVersion` | 원본 1번에는 정정 사유 없음; 특정 버전 선택 시 해당 내용. |
 | VIS-07 | `POST /clinical-records/{recordId}/versions` | DOCTOR(해당 진료 담당) | `{baseVersionNo,symptoms,diagnosis,opinion,correctionReason}` → `201 ClinicalRecordVersion` | 담당 의사만 정정 가능. 최신 버전 불일치 `409 VERSION_CONFLICT`; 사유 필수, 기존 버전 보존. |
 
@@ -224,10 +224,10 @@
 | ID | 메서드 · 경로 | 권한 | 요청 / 성공 | 주요 실패·규칙 |
 |---|---|---|---|---|
 | NUR-01 | `GET /receptions/{receptionId}/nursing-records` | NURSE(본인 과), DOCTOR(본인 예약·접수 환자) | `limit?`, `before?` → `NursingRecord[]` | 해당 접수의 기록 조회. 간호사의 다른 날짜 이력은 NUR-06 사용. 의사는 해당 진료에 연결된 접수 기준 조회. |
-| NUR-02 | `POST /receptions/{receptionId}/nursing-records` | NURSE(본인 과) | `{content}` → `201 NursingRecord` | 접수 후 진료 전·진료 중·완료 후 작성 가능. 작성자·기록 시각 서버 결정; 원본 버전 1 생성. 삭제·취소된 접수 정책 §12. |
-| NUR-03 | `GET /nursing-records/{recordId}` | NURSE(본인 과), DOCTOR(본인 예약·접수 환자) | → `{id,receptionId,latestVersion,versions:[{id,versionNo,author,createdAt}]}` | 기록 본문 및 버전 이력 조회. 관리자·직원은 본문 열람 불가. |
+| NUR-02 | `POST /receptions/{receptionId}/nursing-records` | NURSE(본인 과) | `{content}` → `201 NursingRecord` | 접수 후 진료 전·진료 중·완료 후 작성 가능. 작성자·기록 시각 서버 결정; 원본 버전 1 생성. 삭제된 접수에는 기록할 수 없다. |
+| NUR-03 | `GET /nursing-records/{recordId}` | NURSE(본인 과), DOCTOR(본인 예약·접수 환자) | → `{id,receptionId,latestVersion,versions:[{versionNo,author,createdAt}]}` | 기록 본문 및 버전 이력 조회. 관리자·직원은 본문 열람 불가. |
 | NUR-04 | `GET /nursing-records/{recordId}/versions/{versionNo}` | NURSE(본인 과), DOCTOR(본인 예약·접수 환자) | → `NursingRecordVersion` | 원본·선택 정정의 본문과 사유. 관리자·직원은 열람 불가. |
-| NUR-05 | `POST /nursing-records/{recordId}/versions` | NURSE(본인 과 기록의 최초 작성자) | `{baseVersionNo,content,correctionReason}` → `201 NursingRecordVersion` | 최초 작성자 본인만 정정 가능. 사유 필수, 최신 버전 충돌 `409 VERSION_CONFLICT`. 기존 버전 보존. |
+| NUR-05 | `POST /nursing-records/{recordId}/versions` | NURSE(기록이 연결된 접수의 진료과와 현재 소속이 일치) | `{baseVersionNo,content,correctionReason}` → `201 NursingRecordVersion` | 같은 진료과의 다른 간호사도 정정 가능. 최초 작성자는 변경하지 않고 새 버전 작성자는 로그인한 간호사로 기록한다. 사유 필수, 최신 버전 충돌 `409 VERSION_CONFLICT`. 기존 버전 보존. |
 | NUR-06 | `GET /patients/{patientId}/nursing-records` | NURSE(본인 과) | `receptionId`, `limit?`, `before?` → `NursingRecord[]`, `meta:{nextBefore,hasMore}` | 지정한 접수와 환자·본인 진료과를 검사. 같은 환자의 같은 진료과의 다른 날짜 접수 이력을 선택 접수보다 이전·이후 모두 포함하며 다른 진료과는 제외. 기록별 `receptionId`, `receivedAt`, 최신 버전·작성자·작성 시각 반환. 이력은 과거→현재; `receptionId`로 현재 접수 기록을 구분하며 새 기록은 선택 접수에 NUR-02로 저장. |
 
 ## 9. 대시보드 및 일정
@@ -235,7 +235,7 @@
 | ID | 메서드 · 경로 | 권한 | 요청 / 성공 | 주요 실패·규칙 |
 |---|---|---|---|---|
 | DASH-01 | `GET /dashboards/staff` | STAFF | query `date?` 기본 오늘 → `{date,receptionPreview: Reception[],appointmentPreview: Appointment[]}` | 접수 행은 접수 시각·환자·진료과·의사·예약/현장 구분(`appointmentId` 유무)·상태, 예약 행은 예약 시각·환자·진료과·의사·상태 및 각 ID를 제공. 접수는 최근 접수 순. 제한된 미리보기이며 전체 보기는 목록 API로 이동. |
-| DASH-02 | `GET /doctors/me/schedule` | DOCTOR | `from`, `to` → `{from,to,availability,leaves,appointments,receptions,visits}` | `availability:[{dayOfWeek,startTime,endTime}]`, `leaves:[{id,date}]`, `appointments:Appointment[]`, `receptions:Reception[]`, `visits:Visit[]`. 연결 ID와 각 시각·상태로 시간표와 날짜별 목록 구성. 예약 목록과 내원 목록에는 연결된 동일 환자가 각각 표시될 수 있으나 시간표에서는 연결된 예약·접수를 한 항목으로 합성. 한 의사 동일 시간 유효 예약 한 건; 현장 접수는 별도. 페이지 번호 없음. |
+| DASH-02 | `GET /doctors/me/schedule` | DOCTOR | `from`, `to` → `{from,to,availability,leaves,appointments,receptions,visits}` | `availability:[{dayOfWeek,startTime,endTime}]`, `leaves:[{date}]`, `appointments:Appointment[]`, `receptions:Reception[]`, `visits:Visit[]`. 연결 ID와 각 시각·상태로 시간표와 날짜별 목록 구성. 예약 목록과 내원 목록에는 연결된 동일 환자가 각각 표시될 수 있으나 시간표에서는 연결된 예약·접수를 한 항목으로 합성. 한 의사 동일 시간 유효 예약 한 건; 현장 접수는 별도. 페이지 번호 없음. |
 | DASH-03 | `GET /dashboards/admin` | ADMIN | → `{accountsByRole,departmentsByStatus}` | 역할별 수는 `ACTIVE` 계정만 집계. 미가입 초대·비활성 계정 제외. 진료과 수는 활성·비활성 별도 집계. |
 
 ## 10. 화면 흐름과 API 연결
@@ -335,7 +335,7 @@
 ```json
 {
   "data": {
-    "id": "cv_02", "recordId": "cr_01", "versionNo": 2,
+    "recordId": "cr_01", "versionNo": 2,
     "symptoms": "기침 및 인후 불편감", "diagnosis": "상기도 감염 의심", "opinion": "경과 관찰",
     "correctionReason": "진단 표현 보완",
     "author": { "id": "acc_01", "name": "박지훈", "email": "doctor@example.test", "role": "DOCTOR", "status": "ACTIVE", "department": { "id": "dep_01", "name": "내과", "status": "ACTIVE" } },
@@ -366,18 +366,18 @@
 확정 정책은 위에 반영했으며, 아래 항목은 임의로 확정하지 않는다.
 
 1. **진료 중 추가 호출:** 같은 의사가 진료 중일 때 호출을 차단한다. 입실 확인에서도 동시 진료 금지 규칙을 검증한다.
-2. **접수 삭제 세부:** 간호 기록이 있거나 진료가 시작된 접수는 삭제 불가. 호출됨 상태도 이 조건을 만족하면 삭제할 수 있고 호출이 해제된다. 삭제된 접수는 목록·환자 이력에 표시하지 않는다. 물리 삭제 여부 등 내부 저장 방식은 미정.
+2. **접수 삭제 세부:** 간호 기록이 있거나 진료가 시작된 접수는 삭제 불가. 호출됨 상태도 이 조건을 만족하면 삭제할 수 있고 호출이 해제된다. 접수 행을 물리 삭제하므로 목록·환자 이력에 남지 않는다. 연결된 예약은 유지하며 같은 예약으로 다시 접수할 수 있다.
 3. **간호 기록 시간 범위:** 같은 환자의 같은 과 기록은 선택 접수의 전후를 모두 조회한다. 선택 접수 표시와 새 기록의 연결 대상은 해당 `receptionId`를 기준으로 한다.
 4. **예약 환자 검색:** 간호사는 전체 환자를 검색할 수 있으며 예약 등록은 본인 과만 가능, 변경·취소는 불가.
 5. **접수 담당 의사 변경:** 화면 범위에서 제외하며 접수 생성 후에는 담당 의사를 변경하지 않는다.
 6. **미내원·예약 우선순위:** 미내원 상태 및 예약 환자 자동 우선순위는 제공하지 않는다. 간호사가 호출 대상을 선택한다.
-7. **예약 시간 변경 화면:** `excludeAppointmentId`로 변경 대상 예약만 점유 검사에서 제외하고 현재 시각을 선택 표시한다. 변경이 없으면 저장 버튼을 비활성화한다. `reason` 값 목록은 미정. 동일 의사·동일 시간에는 예약 한 건만 허용하고 현장 접수 인원까지 제한하지 않는다.
+7. **예약 시간 변경 화면:** `excludeAppointmentId`로 변경 대상 예약만 점유 검사에서 제외하고 현재 시각을 선택 표시한다. 변경이 없으면 저장 버튼을 비활성화한다. 예약 가능 시간의 `reason` 값 목록은 미정. 동일 의사·동일 시간에는 예약 한 건만 허용하고 현장 접수 인원까지 제한하지 않는다.
 8. **진료과 삭제:** 의료진 외 예약·접수·진료 이력 중 삭제 제한에 포함할 참조 범위 미정. 과 이름은 과거에도 현재 이름으로 표시.
 9. **의사 미처리 업무:** 오늘 이후 미접수 유효 예약 및 미완료 접수·진료가 있으면 계정 비활성화·소속 변경을 제한한다. 지난 날짜의 미접수 예약은 제한하지 않는다. 비활성 계정도 비밀번호를 재설정할 수 있으나 자동 활성화되지는 않는다.
-10. **환자 주민등록번호:** 추가 필수값·변경 허용·중복 검사·보호 저장 정책 미정. 미변경 시 생략, 응답 마스킹.
+10. **환자 주민등록번호:** 중복 등록은 허용하지 않는다. 변경 허용 여부와 추가 필수값·보호 저장의 세부 정책은 미정이며, 변경을 허용할 경우에도 중복을 허용하지 않는다. 미변경 시 생략, 응답 마스킹.
 11. **관리자 목록·초대:** 별도 검색 조건과 활성 계정 집계는 확정. SMTP 요청 실패 후 재시도·Redis/DB 실패 복구는 구현 전에 정한다.
 12. **인증 세부:** 세션 저장소·만료·CSRF·실패 횟수·토큰 유효기간, 메일과 Redis/DB 간 실패 복구 정책 미정.
-13. **기록 정정:** 대리 정정은 제공하지 않는다. 진료 기록은 담당 의사, 간호 기록은 최초 작성자 본인만 정정한다.
+13. **기록 정정:** 진료 기록은 담당 의사만 정정한다. 간호 기록은 해당 접수의 진료과와 현재 소속이 일치하는 간호사라면 최초 작성자가 아니어도 정정할 수 있다. 최초 작성자는 유지하고 각 버전의 실제 작성자를 기록한다.
 14. **목록 응답 세부:** 진료과 목록과 의사 일간 환자 목록의 최대 반환량, 기록 조회 시 환자 접근 맥락 전달 방식은 구현 전 구체화한다.
 
 ## 13. 작성 및 검토 순서

@@ -4,7 +4,7 @@ info:
   version: 0.1.0-draft
   description: >-
     초안: 구현 완료를 의미하지 않습니다. 미결 정책과 세부 사항은 원본 Markdown §12를 따릅니다. 시간대 Asia/Seoul; 날짜 YYYY-MM-DD, 일시는 오프셋 포함 ISO
-    8601. 주민등록번호·기록·토큰을 URL이나 로그에 남기지 않습니다. 상태·권한·범위는 서버에서 검증합니다.
+    8601. 주민등록번호·기록·토큰을 URL이나 로그에 남기지 않습니다. 상태·권한·범위는 서버에서 검증합니다. doctorId 및 DoctorSummary.id는 의사의 계정 ID와 같습니다.
 
 
     화면 상태는 BOOKED, CANCELLED, REGISTERED, CALLED, IN_PROGRESS, COMPLETED를 사용합니다. 기록은 기록 ID+버전 번호로 관리하며 정정은 새
@@ -52,7 +52,7 @@ info:
 
     1. **진료 중 추가 호출:** 같은 의사가 진료 중일 때 호출을 차단한다. 입실 확인에서도 동시 진료 금지 규칙을 검증한다.
 
-    2. **접수 삭제 세부:** 간호 기록이 있거나 진료가 시작된 접수는 삭제 불가. 호출됨 상태도 이 조건을 만족하면 삭제할 수 있고 호출이 해제된다. 삭제된 접수는 목록·환자 이력에 표시하지 않는다. 물리 삭제 여부 등 내부 저장 방식은 미정.
+    2. **접수 삭제 세부:** 간호 기록이 있거나 진료가 시작된 접수는 삭제 불가. 호출됨 상태도 이 조건을 만족하면 삭제할 수 있고 호출이 해제된다. 접수 행은 물리 삭제하고 연결된 예약은 유지하며 같은 예약으로 다시 접수할 수 있다.
 
     3. **간호 기록 시간 범위:** 같은 환자의 같은 과 기록은 선택 접수의 전후를 모두 조회한다. 선택 접수 표시와 새 기록의 연결 대상은 해당 `receptionId`를 기준으로 한다.
 
@@ -70,13 +70,13 @@ info:
     9. **의사 미처리 업무:** 오늘 이후 미접수 유효 예약 및 미완료 접수·진료가 있으면 계정 비활성화·소속 변경을 제한한다. 지난 날짜의 미접수 예약은 제한하지 않는다. 비활성 계정도
     비밀번호를 재설정할 수 있으나 자동 활성화되지는 않는다.
 
-    10. **환자 주민등록번호:** 추가 필수값·변경 허용·중복 검사·보호 저장 정책 미정. 미변경 시 생략, 응답 마스킹.
+    10. **환자 주민등록번호:** 중복 등록은 허용하지 않는다. 번호 변경 허용 여부와 추가 필수값·보호 저장의 세부 정책은 미정이다. 변경을 허용할 경우에도 중복은 허용하지 않는다. 미변경 시 생략, 응답 마스킹.
 
     11. **관리자 목록·초대:** 별도 검색 조건과 활성 계정 집계는 확정. SMTP 요청 실패 후 재시도·Redis/DB 실패 복구는 구현 전에 정한다.
 
     12. **인증 세부:** 세션 저장소·만료·CSRF·실패 횟수·토큰 유효기간, 메일과 Redis/DB 간 실패 복구 정책 미정.
 
-    13. **기록 정정:** 대리 정정은 제공하지 않는다. 진료 기록은 담당 의사, 간호 기록은 최초 작성자 본인만 정정한다.
+    13. **기록 정정:** 진료 기록은 담당 의사만 정정한다. 간호 기록은 해당 접수의 진료과와 현재 소속이 일치하는 간호사라면 최초 작성자가 아니어도 정정할 수 있다. 최초 작성자는 유지하고 각 버전의 실제 작성자를 기록한다.
 
     14. **목록 응답 세부:** 진료과 목록과 의사 일간 환자 목록의 최대 반환량, 기록 조회 시 환자 접근 맥락 전달 방식은 구현 전 구체화한다.
 
@@ -1772,7 +1772,7 @@ paths:
       description: |-
         **권한:** DOCTOR
 
-        **원본 계약:** `{date}` → `201 {id,date}`
+        **원본 계약:** `{date}` → `201 {date}`
 
         **업무 규칙:** 취소되지 않은 예약이 해당 날짜에 있으면 `409 LEAVE_HAS_BOOKING`; 중복 휴진 `409`. 일자 전체 휴진 기준.
       parameters: []
@@ -2043,7 +2043,7 @@ paths:
 
         **원본 계약:** `{name,residentNumber,phone,...}` → `201 PatientDetail`
 
-        **업무 규칙:** 주민등록번호·연락처 형식과 중복 확인. 필수 추가 항목은 도메인 정의서 확정 후 지정.
+        **업무 규칙:** 주민등록번호·연락처 형식 확인. 주민등록번호 중복은 `409 RESIDENT_NUMBER_DUPLICATE`. 필수 추가 항목은 도메인 정의서 확정 후 지정.
       parameters: []
       responses:
         "201":
@@ -2078,6 +2078,12 @@ paths:
                 $ref: "#/components/schemas/Error"
         "403":
           description: 권한 또는 상태 제한
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: 주민등록번호 중복 (`RESIDENT_NUMBER_DUPLICATE`)
           content:
             application/json:
               schema:
@@ -2182,7 +2188,7 @@ paths:
 
         **원본 계약:** `{name?,residentNumber?,phone?,...}` → `PatientDetail`
 
-        **업무 규칙:** 응답은 마스킹. 변경하지 않을 주민등록번호는 필드를 생략하며 마스킹 문자열은 유효한 원본 입력이 아니다. 번호 변경 허용 정책은 §12.
+        **업무 규칙:** 응답은 마스킹. 변경하지 않을 주민등록번호는 필드를 생략하며 마스킹 문자열은 유효한 원본 입력이 아니다. 번호 변경 허용 여부는 §12. 변경을 허용하는 경우 다른 환자와 중복되면 `409 RESIDENT_NUMBER_DUPLICATE`.
       parameters:
         - name: patientId
           in: path
@@ -2221,6 +2227,12 @@ paths:
                 $ref: "#/components/schemas/Error"
         "403":
           description: 권한 또는 상태 제한
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: 주민등록번호 중복 (`RESIDENT_NUMBER_DUPLICATE`)
           content:
             application/json:
               schema:
@@ -2679,9 +2691,9 @@ paths:
       description: |-
         **권한:** STAFF
 
-        **원본 계약:** `{reason?}` → `Appointment`
+        **원본 계약:** 본문 없음 → `Appointment`
 
-        **업무 규칙:** 유효 접수가 없는 예약만 취소; 접수 후 `409 APPOINTMENT_ALREADY_RECEIVED`. 취소자·시각 기록.
+        **업무 규칙:** 유효 접수가 없는 예약만 취소; 접수 후 `409 APPOINTMENT_ALREADY_RECEIVED`. 취소 사유는 입력받지 않고 취소자·시각을 기록한다.
       parameters:
         - name: appointmentId
           in: path
@@ -2736,14 +2748,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                reason: *a1
       x-response-data-schema-by-role:
         STAFF:
           $ref: "#/components/schemas/StaffAppointment"
@@ -3124,7 +3128,7 @@ paths:
 
 
         **업무 규칙:** 간호 기록이 있으면 `409 RECEPTION_HAS_NURSING_RECORDS`. 진료 시작 후 삭제 불가 `409 VISIT_ALREADY_STARTED`.
-        삭제 시 예약은 보존하고 삭제된 접수는 목록·환자 이력과 현재 유효 접수에서 제외한다. 호출된 접수도 간호 기록이 없고 진료가 시작되지 않았다면 삭제 가능하며 해당 호출은 해제된다. 물리적 저장 방식은 §12.
+        접수 행을 물리 삭제하며 예약은 보존한다. 삭제된 접수는 목록·환자 이력과 현재 유효 접수에서 제외한다. 호출된 접수도 간호 기록이 없고 진료가 시작되지 않았다면 삭제 가능하며 해당 호출은 해제된다.
       parameters:
         - name: receptionId
           in: path
@@ -3618,7 +3622,7 @@ paths:
       description: |-
         **권한:** DOCTOR(허용 범위)
 
-        **원본 계약:** → `{id,visitId,latestVersion,versions:[{id,versionNo,author,createdAt}]}`
+        **원본 계약:** → `{id,visitId,latestVersion,versions:[{versionNo,author,createdAt}]}`
 
         **업무 규칙:** 기본 최신. 기록은 진료를, 진료는 접수를 거쳐 담당 의사/환자를 확인한다.
       parameters:
@@ -3905,7 +3909,7 @@ paths:
 
         **원본 계약:** `{content}` → `201 NursingRecord`
 
-        **업무 규칙:** 접수 후 진료 전·진료 중·완료 후 작성 가능. 작성자·기록 시각 서버 결정; 원본 버전 1 생성. 삭제·취소된 접수 정책 §12.
+        **업무 규칙:** 접수 후 진료 전·진료 중·완료 후 작성 가능. 작성자·기록 시각 서버 결정; 원본 버전 1 생성. 삭제된 접수에는 기록할 수 없다.
       parameters:
         - name: receptionId
           in: path
@@ -3973,7 +3977,7 @@ paths:
       description: |-
         **권한:** NURSE(본인 과), DOCTOR(본인 예약·접수 환자)
 
-        **원본 계약:** → `{id,receptionId,latestVersion,versions:[{id,versionNo,author,createdAt}]}`
+        **원본 계약:** → `{id,receptionId,latestVersion,versions:[{versionNo,author,createdAt}]}`
 
         **업무 규칙:** 기록 본문 및 버전 이력 조회. 관리자·직원은 본문 열람 불가.
       parameters:
@@ -4097,11 +4101,11 @@ paths:
       operationId: NUR_05
       summary: 간호 기록 정정
       description: |-
-        **권한:** NURSE(본인 과 기록의 최초 작성자)
+        **권한:** NURSE(기록이 연결된 접수의 진료과와 현재 소속이 일치)
 
         **원본 계약:** `{baseVersionNo,content,correctionReason}` → `201 NursingRecordVersion`
 
-        **업무 규칙:** 최초 작성자 본인만 정정 가능. 사유 필수, 최신 버전 충돌 `409 VERSION_CONFLICT`. 기존 버전 보존.
+        **업무 규칙:** 같은 진료과의 다른 간호사도 정정 가능. 최초 작성자는 변경하지 않고 새 버전 작성자는 로그인한 간호사로 기록한다. 사유 필수, 최신 버전 충돌 `409 VERSION_CONFLICT`. 기존 버전 보존.
       parameters:
         - name: recordId
           in: path
@@ -4343,7 +4347,7 @@ paths:
         **원본 계약:** `from`, `to` → `{from,to,availability,leaves,appointments,receptions,visits}`
 
 
-        **업무 규칙:** `availability:[{dayOfWeek,startTime,endTime}]`, `leaves:[{id,date}]`,
+        **업무 규칙:** `availability:[{dayOfWeek,startTime,endTime}]`, `leaves:[{date}]`,
         `appointments:Appointment[]`, `receptions:Reception[]`, `visits:Visit[]`. 연결 ID와 각 시각·상태로 시간표와 날짜별 목록
         구성. 예약 목록과 내원 목록에는 연결된 동일 환자가 각각 표시될 수 있으나 시간표에서는 연결된 예약·접수를 한 항목으로 합성. 한 의사 동일 시간 유효 예약 한 건; 현장 접수는
         별도. 페이지 번호 없음.
@@ -4674,7 +4678,6 @@ components:
           enum:
             - REGISTERED
             - CALLED
-            - CANCELLED
         displayStatus:
           $ref: "#/components/schemas/DisplayStatus"
         visitId:
@@ -4732,7 +4735,6 @@ components:
     ClinicalRecordVersion:
       type: object
       properties:
-        id: *a2
         recordId: *a2
         versionNo:
           type: integer
@@ -4748,7 +4750,6 @@ components:
           $ref: "#/components/schemas/AccountSummary"
         createdAt: *a5
       required:
-        - id
         - recordId
         - versionNo
         - symptoms
@@ -4787,7 +4788,6 @@ components:
     NursingRecordVersion:
       type: object
       properties:
-        id: *a2
         recordId: *a2
         versionNo:
           type: integer
@@ -4801,7 +4801,6 @@ components:
           $ref: "#/components/schemas/AccountSummary"
         createdAt: *a5
       required:
-        - id
         - recordId
         - versionNo
         - content
@@ -4838,7 +4837,6 @@ components:
     VersionSummary:
       type: object
       properties:
-        id: *a2
         versionNo:
           type: integer
           minimum: 1
@@ -4846,7 +4844,6 @@ components:
           $ref: "#/components/schemas/AccountSummary"
         createdAt: *a5
       required:
-        - id
         - versionNo
         - author
         - createdAt
@@ -4951,10 +4948,8 @@ components:
     Leave:
       type: object
       properties:
-        id: *a2
         date: *a4
       required:
-        - id
         - date
     AppointmentSlots:
       type: object
@@ -5125,7 +5120,7 @@ components:
       required:
         - error
     DoctorSelfAccount:
-      description: 의사 본인의 로그인·계정 조회 응답. doctorId는 null이 아닌 의사 ID.
+      description: 의사 본인의 로그인·계정 조회 응답. doctorId는 의사의 계정 ID와 같다.
       allOf:
         - $ref: "#/components/schemas/AccountSummary"
         - type: object
@@ -5136,7 +5131,7 @@ components:
                 - DOCTOR
             doctorId:
               type: string
-              description: 본인 의사의 ID
+              description: 본인 의사의 계정 ID
           required:
             - role
             - doctorId
