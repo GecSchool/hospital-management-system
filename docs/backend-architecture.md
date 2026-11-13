@@ -44,7 +44,7 @@ backend/src/
 | `auth` | 세션 AUTH-01~03, 가입·초대 AUTH-04~05/ACC-03, 비밀번호 초기화 AUTH-06~07/ACC-05 |
 | `account` | 계정 조회 ACC-01~02는 구현됨, 상태 변경 ACC-04는 미구현 |
 | `department` | 진료과 CRUD·상태 DEP-01~05 |
-| `medical-staff` | 의료진 조회·소속 DEP-06~08 |
+| `medical-staff` | 의료진 조회 DEP-06~07은 구현됨, 소속 변경 DEP-08은 미구현 |
 | `patient` | 환자 PAT-01~04, 직원용 진료 이력 PAT-07 |
 | `doctor-schedule` | 가능 시간 SCH-01~02, 휴진 SCH-03~04, 예약 가능 시간 SCH-05 |
 | `appointment` | 예약 APT-01~05, 재진 예약 APT-06 |

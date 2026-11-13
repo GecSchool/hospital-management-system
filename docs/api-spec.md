@@ -132,7 +132,7 @@
 | DEP-04 | `PATCH /departments/{departmentId}/status` | ADMIN | `{status}` → `200 DepartmentSummary` | 소속 의료진이 남으면 `409 DEPARTMENT_HAS_STAFF`. |
 | DEP-05 | `DELETE /departments/{departmentId}` | ADMIN | → `204` | 소속 의료진 또는 참조 이력 존재 시 `409 DEPARTMENT_IN_USE`. 참조 대상의 정확한 범위는 §12. |
 | DEP-06 | `GET /departments/{departmentId}/medical-staff` | ADMIN | query `role?`, `page?`, `size?` → `AccountSummary[]` | 소속 의료진 번호형 페이지네이션과 공통 `meta` 제공. |
-| DEP-07 | `GET /departments/{departmentId}/doctors` | STAFF, NURSE, ADMIN | query `activeOnly?` → `DoctorSummary[]` | 간호사는 본인 진료과로 범위를 제한. |
+| DEP-07 | `GET /departments/{departmentId}/doctors` | STAFF, NURSE, ADMIN | query `activeOnly?` → `DoctorSummary[]` | 간호사는 본인 진료과로 범위를 제한. `activeOnly=true`일 때 활성 의사만 반환하고, `false` 또는 생략 시 상태로 필터링하지 않는다. |
 | DEP-08 | `PATCH /medical-staff/{accountId}/department` | ADMIN | `{departmentId}` → 변경된 `AccountSummary` | 대상 과 활성 확인. 의사에게 오늘 이후의 미접수 유효 예약 또는 미완료 접수·진료가 있으면 `409 DOCTOR_HAS_PENDING_WORK`. 과거 미접수 예약은 차단하지 않는다. 과거 접수의 진료과는 당시 값 유지. |
 | SCH-01 | `GET /doctors/{doctorId}/availability` | DOCTOR(본인), STAFF, NURSE(본인 과) | → `{doctorId,intervalMinutes:20,weeklySlots:[{dayOfWeek,startTime,endTime}]}` | 요일 0=일요일~6=토요일의 매주 반복 구간을 반환한다. 구간은 요일 숫자와 시작 시각 오름차순이며 연속 구간은 합쳐 반환한다. 간호사는 본인 과. 관리 기능의 관리자 접근은 §12. |
 | SCH-02 | `PUT /doctors/me/availability` | DOCTOR | `{weeklySlots:[{dayOfWeek,startTime,endTime}]}` → `200 {doctorId,intervalMinutes:20,weeklySlots:[...]}` | 본인의 주간 시간표 전체 교체. 앞으로 남은 유효 예약과 충돌하면 `409 AVAILABILITY_CONFLICT`이며 기존 시간표를 유지한다. 날짜·시간 경계 및 구간 규칙은 아래 참조. 성공 시 정규화된 전체 시간표를 반환한다. |
