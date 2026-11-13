@@ -1,6 +1,6 @@
 # 백엔드 아키텍처
 
-업무별로 먼저 나누고 각 도메인 안에서 HTTP 처리와 업무 로직을 분리한다. 이 문서는 작업 구조이며 아직 업무 API가 구현됐다는 의미는 아니다.
+업무별로 먼저 나누고 각 도메인 안을 `routes/`, `controllers/`, `services/`, `validations/`로 구분한다. 파일명은 해당 도메인의 업무를 표시한다. 이 구조는 구현 완료를 의미하지 않는다.
 
 ```text
 backend/src/
@@ -9,10 +9,19 @@ backend/src/
 ├── config/                    # 환경변수 검증·Prisma 클라이언트
 ├── common/                    # 공통 오류·응답·미들웨어·날짜/페이지 도구
 ├── modules/
-│   ├── system/                # 헬스 체크
-│   ├── patient/               # 예: patient.routes/controller/service.ts
-│   ├── appointment/           # 구현 시 추가
-│   └── ...                    # 각 업무를 구현할 때 추가
+│   ├── account/               # 계정 조회·상태 변경
+│   ├── auth/                  # 인증·초대·초기화
+│   ├── department/            # 진료과 관리
+│   ├── medical-staff/         # 의료진 조회·소속 변경
+│   ├── patient/               # 환자·직원용 진료 이력
+│   ├── doctor-schedule/       # 진료 가능 시간·휴진·예약 가능 시간
+│   ├── appointment/          # 예약·재진 예약
+│   ├── reception/             # 접수·호출·입실
+│   ├── visit/                 # 의사 환자 목록·진료 완료
+│   ├── clinical-record/       # 진료 이력·진료 기록과 정정
+│   ├── nursing-record/        # 간호 기록·이력과 정정
+│   ├── dashboard/             # 직원·의사·관리자 화면 집계
+│   └── system/                # 헬스 체크
 ├── generated/prisma/          # 생성 파일, Git 미포함
 └── routes/index.ts            # /api/v1 업무 라우터 조립
 ```
@@ -22,9 +31,30 @@ backend/src/
 - **서비스:** 업무 규칙·권한에 필요한 대상 확인·트랜잭션을 처리한다. HTTP 요청·응답 객체를 직접 사용하지 않는다.
 - **입력 검증:** 각 도메인에서 형식·필수 입력을 검사한다. DB 상태에 의존하는 업무 조건은 서비스에서 확인한다.
 - **Prisma:** `config/prisma.ts`의 `getPrismaClient()`는 프로세스에서 재사용되는 클라이언트를 반환한다. 테스트 등 별도 연결이 필요하면 `createPrismaClient()`를 사용하고 호출자가 연결을 닫는다. 구현이 복잡해지거나 쿼리를 공유해야 할 때만 repository를 추가한다.
-- **공통 업무 규칙:** 예약 가능 여부처럼 도메인 간 중복되는 정책은 구현 시 한 곳에서 재사용한다. 아직 사용하지 않는 도메인 폴더와 서비스를 미리 만들지 않는다.
+- **공통 업무 규칙:** 예약 가능 여부처럼 도메인 간 중복되는 정책은 구현 시 한 곳에서 재사용한다. 공통화를 이유로 별개의 업무 권한·트랜잭션을 생략하지 않는다.
 - **오류·로깅:** 알려진 업무 오류는 `AppError`로 전달하고, 예상치 못한 오류는 공통 처리한다. 요청 본문·토큰·의료정보를 로그에 남기지 않는다.
 - **테스트:** 도메인·공통 코드 옆에 `*.unit.test.ts`와 `*.integration.test.ts`를 둔다. 여러 도메인에 걸친 통합 테스트와 공통 fixture는 `backend/tests/`에 둔다. 실행은 `test:unit`·`test:integration`으로 구분하고 빌드에서는 테스트 파일을 제외한다.
+
+## 구현 예정 파일
+
+각 도메인의 미구현 파일은 관련 API 번호를 적은 주석과 `export {}`만 포함한다. 아직 컨트롤러나 서비스 기능이 없고, `src/routes/index.ts`에도 등록되지 않았다. 따라서 파일이 있다는 이유로 API를 호출할 수 있는 것은 아니다. 기능 구현 시 적절한 입력 검증·권한 검사·테스트를 먼저 작성한 뒤 내용을 채우고 필요한 라우트를 연결한다. 실제 구현에 맞게 파일을 합치거나 이름을 바꿀 수 있다.
+
+| 도메인 | 예정 업무와 API |
+|---|---|
+| `auth` | 세션 AUTH-01~03, 가입·초대 AUTH-04~05/ACC-03, 비밀번호 초기화 AUTH-06~07/ACC-05 |
+| `account` | 계정 조회 ACC-01~02는 구현됨, 상태 변경 ACC-04는 미구현 |
+| `department` | 진료과 CRUD·상태 DEP-01~05 |
+| `medical-staff` | 의료진 조회·소속 DEP-06~08 |
+| `patient` | 환자 PAT-01~04, 직원용 진료 이력 PAT-07 |
+| `doctor-schedule` | 가능 시간 SCH-01~02, 휴진 SCH-03~04, 예약 가능 시간 SCH-05 |
+| `appointment` | 예약 APT-01~05, 재진 예약 APT-06 |
+| `reception` | 접수 REC-01~04, 호출·입실 REC-05/07 |
+| `visit` | 의사 환자 목록 VIS-01, 진료 상세·완료 VIS-02/04 |
+| `clinical-record` | 진료 이력 VIS-03, 기록·정정 VIS-05~07 |
+| `nursing-record` | 간호 기록·정정 NUR-01~05, 환자 간호 이력 NUR-06 |
+| `dashboard` | 직원 DASH-01, 의사 일정 DASH-02, 관리자 DASH-03 |
+
+URL 접두사와 도메인은 일치하지 않을 수 있다. 예를 들어 환자의 진료 이력 URL은 `clinical-record`에, 의사의 재진 예약 URL은 `appointment`에 연결하되 공통 라우터 조립 시 명세의 URL을 유지한다. 계정 초대·비밀번호 초기화, 진료과는 팀원 담당이므로 실제 구현 시 팀원과 파일 경계를 맞춘다.
 
 `app.ts`는 요청 ID → 보안 헤더 → 선택적 CORS → JSON 파싱 → Swagger 및 라우터 → API 404 → 공통 오류 처리 순으로 연결한다. Swagger UI의 인라인 초기화에 필요한 CSP 예외는 문서 경로에만 적용한다. `CORS_ORIGIN`을 지정하지 않으면 CORS 미들웨어를 사용하지 않는다. 개발 Vite 프록시에는 별도 CORS 설정이 필요 없다.
 

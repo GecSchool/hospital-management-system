@@ -5,7 +5,7 @@ import swaggerUi from 'swagger-ui-express';
 import { fileURLToPath } from 'node:url';
 import { AppError, errorHandler, requestId } from './common/errors/index.js';
 import { config, type AppConfig } from './config/env.js';
-import { systemRouter } from './modules/system/system.routes.js';
+import { systemRouter } from './modules/system/routes/system.routes.js';
 import { apiRouter } from './routes/index.js';
 import type { AccountProvider } from './common/middlewares/auth.js';
 

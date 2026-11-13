@@ -58,7 +58,7 @@ DB 통합 테스트는 기존 개발 DB와 별도의 로컬 PostgreSQL 데이터
 
 ## 백엔드 공통 구조
 
-도메인별 라우터·컨트롤러·서비스를 `backend/src/modules/`에 두고, 업무 라우터는 `backend/src/routes/index.ts`에 등록합니다. 환경 설정·Prisma 생성은 `src/config/`, 공통 오류·응답·미들웨어·도구는 `src/common/`에 둡니다. 구조와 의존 관계는 [백엔드 아키텍처](docs/backend-architecture.md)를 참고하세요.
+`backend/src/modules/`에서 도메인별로 먼저 나누고, 도메인 안은 `routes/`, `controllers/`, `services/`, `validations/`로 구분합니다. 업무 라우터는 구현 후 `backend/src/routes/index.ts`에 등록합니다. `예정` 주석이 있는 파일은 미구현 뼈대이므로 라우트가 동작하지 않습니다. 환경 설정·Prisma 생성은 `src/config/`, 공통 오류·응답·미들웨어·도구는 `src/common/`에 둡니다. 구조와 담당 API는 [백엔드 아키텍처](docs/backend-architecture.md)를 참고하세요.
 
 Prisma 클라이언트 생성 위치는 `backend/src/generated/prisma/`이며 Git에 포함하지 않습니다. 클론하거나 스키마를 변경한 뒤 `npm run prisma:generate --workspace backend`를 먼저 실행해야 빌드 및 Prisma를 사용하는 테스트를 실행할 수 있습니다. 인증 연결점은 실제 세션에 아직 연결되지 않았고 테스트용 인증 우회는 등록되어 있지 않습니다. 업무 API를 추가할 때 팀원의 세션 구현과 매 요청 최신 계정 상태·역할·소속을 확인하는 제공자를 연결하고, 리소스별 접근 범위를 별도로 검증해야 합니다.
 
