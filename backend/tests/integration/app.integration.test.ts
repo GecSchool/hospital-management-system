@@ -17,7 +17,7 @@ describe('HTTP 서버 준비 상태', () => {
 
   it('미구현 뼈대만 있는 도메인은 API로 등록하지 않는다', async () => {
     expect((await request(app).get('/api/v1/departments')).status).toBe(404);
-    expect((await request(app).get('/api/v1/patients')).status).toBe(404);
+    expect((await request(app).get('/api/v1/appointments')).status).toBe(404);
   });
 
   it('API에는 보안 헤더를 적용하고 Swagger UI를 정상 제공한다', async () => {

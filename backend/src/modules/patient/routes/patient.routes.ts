@@ -1,2 +1,14 @@
-// 예정: PAT-01~04 환자 정보 관리. 미구현이며 라우터에 등록하지 않았습니다.
-export {};
+import { Router } from 'express';
+import { requireAccount, requireRole } from '../../../common/middlewares/auth.js';
+import * as controller from '../controllers/patient.controller.js';
+
+export const patientRouter = Router();
+patientRouter.get('/', requireAccount, requireRole('STAFF', 'NURSE'), controller.list);
+patientRouter.post('/', requireAccount, requireRole('STAFF'), controller.create);
+patientRouter.get(
+  '/:patientId',
+  requireAccount,
+  requireRole('STAFF', 'DOCTOR', 'NURSE'),
+  controller.get,
+);
+patientRouter.patch('/:patientId', requireAccount, requireRole('STAFF'), controller.update);
