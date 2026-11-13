@@ -1,6 +1,7 @@
 # Dependencies
 node_modules/
 backend/generated/prisma/
+backend/src/generated/prisma/
 
 # Build and test output
 dist/
