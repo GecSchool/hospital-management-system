@@ -1,0 +1,402 @@
+/* Screens Staff 17:4, 17:107, 26:348. Preserve the shared Phase 2 header offset. */
+.staff-page .page-header__actions {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.staff-page .page-header__actions > * {
+  min-width: 140px;
+  text-decoration: none;
+}
+.staff-page .page-header {
+  flex-wrap: wrap;
+}
+.staff-page h2 {
+  margin: 0;
+  font: var(--font-heading-s);
+}
+.staff-page a {
+  text-underline-offset: 3px;
+}
+.staff-text-link {
+  color: var(--color-brand-primary);
+  text-decoration: none;
+  white-space: nowrap;
+  font-size: 14px;
+}
+.staff-text-link:hover,
+.staff-name-link:hover {
+  text-decoration: underline;
+}
+.staff-name-link {
+  color: var(--color-text-primary);
+  font-weight: 500;
+  text-decoration: none;
+}
+.staff-section-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 24px;
+}
+.staff-section-heading > span {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+.staff-section-heading > .staff-text-link {
+  margin-left: auto;
+  margin-right: 32px;
+}
+.staff-table {
+  width: calc(100% - 88px);
+}
+.staff-table .ui-table {
+  min-width: 720px;
+  table-layout: fixed;
+}
+.staff-table .ui-table td {
+  white-space: nowrap;
+}
+.staff-table--patients th:nth-child(1) {
+  width: 22%;
+}
+.staff-table--patients th:nth-child(2) {
+  width: 19%;
+}
+.staff-table--patients th:nth-child(3) {
+  width: 22%;
+}
+.staff-table--patients th:nth-child(4) {
+  width: 24%;
+}
+.staff-table--patients th:nth-child(5) {
+  width: 13%;
+}
+.staff-table--appointments th:nth-child(1) {
+  width: 21.5%;
+}
+.staff-table--appointments th:nth-child(2) {
+  width: 17.2%;
+}
+.staff-table--appointments th:nth-child(3) {
+  width: 14.3%;
+}
+.staff-table--appointments th:nth-child(4) {
+  width: 17.7%;
+}
+.staff-table--appointments th:nth-child(5) {
+  width: 16.4%;
+}
+.staff-table--appointments th:nth-child(6) {
+  width: 12.9%;
+}
+.staff-table--receptions th:nth-child(1) {
+  width: 13%;
+}
+.staff-table--receptions th:nth-child(2) {
+  width: 15%;
+}
+.staff-table--receptions th:nth-child(3) {
+  width: 17%;
+}
+.staff-table--receptions th:nth-child(4) {
+  width: 18%;
+}
+.staff-table--receptions th:nth-child(5) {
+  width: 17%;
+}
+.staff-table--receptions th:nth-child(6) {
+  width: 20%;
+}
+.staff-table--history th:first-child {
+  width: 28%;
+}
+.staff-page .ui-pagination {
+  margin-top: 22px;
+}
+.staff-dashboard .page-header {
+  border-bottom: 0;
+}
+.staff-dashboard-section {
+  margin-top: 8px;
+}
+.staff-dashboard-section .staff-table {
+  margin-top: 6px;
+}
+.staff-dashboard-section + .staff-dashboard-section {
+  margin-top: 34px;
+}
+.staff-status {
+  color: var(--color-brand-primary);
+}
+.patient-search {
+  margin-top: 31px;
+  padding-bottom: 38px;
+  border-bottom: var(--border-default);
+}
+.patient-search-fields {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(150px, 1fr);
+  gap: 22px;
+  padding-right: 16px;
+}
+.patient-search-fields .ui-form-field {
+  gap: 0;
+  min-height: 68px;
+  padding-top: 7px;
+}
+.patient-search-fields .ui-form-field > label {
+  font-size: 12px;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+.patient-search-fields .ui-input {
+  height: 36px;
+  font-size: 14px;
+}
+.patient-search-fields > .ui-button {
+  align-self: start;
+  margin-top: 12px;
+}
+.patient-search > p {
+  margin: 16px 0 0;
+  color: var(--color-text-secondary);
+  font: var(--font-caption);
+}
+.patient-results {
+  margin-top: 34px;
+}
+.patient-results .staff-table {
+  margin-top: 24px;
+}
+.staff-breadcrumb {
+  margin: 0 0 15px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 20px;
+}
+.staff-breadcrumb a {
+  color: inherit;
+  text-decoration: none;
+}
+.staff-detail {
+  margin-top: -6px;
+}
+.staff-detail .page-header {
+  min-height: 92px;
+  padding-bottom: 20px;
+}
+.staff-detail .page-header p {
+  font-size: 14px;
+}
+.staff-patient-info {
+  padding: 24px 0 35px;
+  border-bottom: var(--border-default);
+}
+.staff-patient-info dl {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 26px;
+  margin: 31px 0 0;
+}
+.staff-patient-info dt {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 20px;
+}
+.staff-patient-info dd {
+  margin: 3px 0 0;
+  font-size: 15px;
+  line-height: 27px;
+  overflow-wrap: anywhere;
+}
+.staff-detail > .ui-tabs {
+  margin-top: 31px;
+}
+.staff-detail .ui-tab-list {
+  gap: 12px;
+}
+.staff-history-count {
+  margin: 0 0 24px;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  line-height: 22px;
+}
+.staff-table--history .ui-button {
+  min-width: 112px;
+  padding: 0 14px;
+  text-decoration: none;
+}
+.staff-notice {
+  margin: 20px 0;
+  color: var(--color-success-text);
+  font: var(--font-body-s);
+}
+.staff-error {
+  margin: 16px 0 0;
+  color: var(--color-danger-text);
+  font: var(--font-body-s);
+}
+.staff-mock {
+  margin-top: 36px;
+  border-top: var(--border-default);
+  padding-top: 16px;
+  color: var(--color-text-secondary);
+  font: var(--font-caption);
+}
+.staff-mock details > p,
+.staff-mock details > label {
+  margin-top: 12px;
+}
+/* Scoped geometry leaves the authentication and other role dialogs unchanged. */
+.ui-modal.staff-patient-modal {
+  width: min(560px, calc(100% - 32px));
+  padding: 28px 32px 44px;
+}
+.staff-patient-modal .ui-modal-header h2 {
+  font: var(--font-heading-m);
+}
+.staff-patient-modal .ui-modal-description {
+  margin-top: 6px;
+  line-height: 22px;
+}
+.staff-patient-modal .ui-modal-body {
+  margin-top: 17px;
+  padding-top: 30px;
+}
+.staff-patient-fields {
+  display: grid;
+  gap: 13px;
+}
+.staff-patient-fields .ui-form-field {
+  min-height: 90px;
+  gap: 4px;
+}
+.staff-patient-fields .ui-form-field > label {
+  color: var(--color-text-secondary);
+}
+.staff-patient-fields .ui-input {
+  height: 36px;
+}
+.staff-patient-modal .ui-modal-footer {
+  margin-top: 52px;
+  gap: 14px;
+}
+.staff-patient-modal .ui-modal-footer > .ui-button {
+  min-width: 136px;
+}
+.staff-patient-modal .ui-modal-footer > .staff-cancel {
+  min-width: 40px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+.staff-privacy {
+  margin: 22px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 20px;
+}
+.ui-modal.staff-patient-modal--edit {
+  padding-bottom: 34px;
+  --color-overlay: rgb(15 26 33 / 35%);
+}
+.staff-patient-modal--edit .ui-modal-body {
+  padding-top: 22px;
+}
+.staff-patient-modal--edit .staff-patient-fields {
+  gap: 15px;
+}
+.staff-patient-modal--edit .ui-modal-footer {
+  margin-top: 29px;
+}
+.staff-patient-modal--edit .ui-modal-footer > .ui-button:first-child {
+  min-width: 128px;
+}
+@media (max-width: 1200px) {
+  .patient-search-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .patient-search-fields > .ui-button {
+    min-width: 150px;
+    justify-self: start;
+  }
+  .staff-page .page-header__actions {
+    padding-top: 0;
+  }
+  .staff-patient-info dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .staff-table {
+    width: 100%;
+  }
+}
+@media (max-width: 560px) {
+  .ui-modal.staff-patient-modal {
+    padding-inline: 24px;
+    max-height: calc(100dvh - 32px);
+  }
+  .staff-patient-modal .ui-modal-footer {
+    flex-wrap: wrap;
+  }
+}
+/* Avoid password-manager credential detection for an identity field. DOM value remains transient. */
+.staff-resident-input {
+  -webkit-text-security: disc;
+}
+.staff-refresh {
+  margin: 12px 0;
+  color: var(--color-text-secondary);
+  font: var(--font-caption);
+}
+.staff-patients .page-header__actions > .ui-button {
+  min-width: 152px;
+}
+.staff-dashboard .page-header__actions > * {
+  min-width: 144px;
+}
+.staff-detail .page-header__actions > :last-child {
+  min-width: 160px;
+}
+/* Requested narrow-screen adaptation: reuse the existing identity, menu and content. */
+@media (max-width: 900px) {
+  .staff-workspace .app-layout {
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .staff-workspace .app-sidebar__identity {
+    padding-inline: 24px;
+  }
+  .staff-workspace .app-sidebar__navigation {
+    padding: 16px 24px;
+    border-bottom: var(--border-default);
+  }
+  .staff-workspace .app-sidebar__label {
+    margin-bottom: 8px;
+  }
+  .staff-workspace .app-sidebar nav {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .staff-workspace .app-sidebar__link {
+    padding-inline: 10px;
+  }
+  .staff-workspace .app-header {
+    height: auto;
+    min-height: 64px;
+    padding: 16px 24px;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .staff-workspace .page-container {
+    padding: 28px 24px 48px;
+  }
+  .staff-page .page-header__actions {
+    width: 100%;
+  }
+  .staff-detail .ui-tab {
+    flex-basis: 100px;
+  }
+  .staff-section-heading > .staff-text-link {
+    margin-right: 0;
+  }
+}

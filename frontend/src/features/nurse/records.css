@@ -1,0 +1,172 @@
+/* Screens 31:74, 38:2597, 179:1593. Reuse the Nurse shell and its +20px identity spacing. */
+.nursing-records {
+  min-width: 0;
+  color: var(--color-text-primary);
+}
+.nursing-records .page-header {
+  flex-wrap: wrap;
+  border-bottom: var(--border-default);
+  min-height: 100px;
+  padding-bottom: 24px;
+}
+.nursing-records .page-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.nursing-records h2 {
+  font: var(--font-heading-s);
+  margin: 0 0 24px;
+}
+.record-close {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  text-decoration: none;
+  color: var(--color-text-primary);
+  font-size: 28px;
+}
+.record-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 410px) minmax(0, 500px);
+  gap: 64px;
+  padding-top: 40px;
+}
+.record-columns > *,
+.record-panel {
+  min-width: 0;
+}
+.record-muted {
+  color: var(--color-text-secondary);
+  font: var(--font-body-s);
+}
+.record-context {
+  color: var(--color-text-secondary);
+  font: var(--font-caption);
+}
+.record-body {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: var(--font-body-m);
+}
+.record-history {
+  border-bottom: var(--border-default);
+  padding: 24px 0;
+}
+.record-history[aria-current='true'] {
+  border-left: 3px solid var(--color-brand-primary);
+  padding-left: 12px;
+}
+.record-history p {
+  margin: 0 0 12px;
+}
+.record-link,
+.record-scopes button,
+.record-versions button {
+  color: var(--color-brand-primary);
+  background: none;
+  border: 0;
+  padding: 8px 0;
+  font: var(--font-body-s);
+  cursor: pointer;
+  text-decoration: none;
+}
+.record-link:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+.record-actions,
+.record-scopes,
+.record-versions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.record-scopes {
+  margin-bottom: 12px;
+}
+.record-scopes button {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+.record-scopes button[aria-pressed='true'],
+.record-versions button[aria-pressed='true'] {
+  color: var(--color-brand-primary);
+  text-decoration: underline;
+  text-underline-offset: 6px;
+}
+.record-versions {
+  margin: 16px 0;
+  gap: 24px;
+}
+.record-versions button {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+.record-reason {
+  border-top: var(--border-default);
+  margin-top: 24px;
+}
+.record-textarea {
+  width: 100%;
+  min-height: 125px;
+  resize: vertical;
+  border: 0;
+  border-bottom: var(--border-strong);
+  border-radius: 0;
+  padding: 12px 0;
+  font: var(--font-body-s);
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+}
+.record-textarea::placeholder {
+  color: var(--color-text-secondary);
+}
+.record-panel .ui-form-field {
+  margin-bottom: 28px;
+}
+.record-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 64px;
+}
+.record-current {
+  border-top: var(--border-default);
+  margin-top: 24px;
+}
+@media (max-width: 1100px) {
+  .record-columns {
+    gap: 32px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 700px) {
+  .record-columns {
+    grid-template-columns: minmax(0, 1fr);
+    padding-top: 24px;
+  }
+  .record-panel {
+    grid-row: 1;
+  }
+  .record-form-actions {
+    margin-top: 24px;
+  }
+  .nursing-records .page-header__actions {
+    flex-wrap: wrap;
+  }
+}
+
+.nursing-records .page-header__actions .ui-button {
+  min-height: 44px;
+  min-width: 152px;
+  text-decoration: none;
+}
+.record-form-actions .ui-button {
+  min-height: 44px;
+  min-width: 136px;
+}

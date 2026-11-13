@@ -1,0 +1,238 @@
+/* Screens 26:436, 26:515, 33:676, 68:1656. Reuse the unchanged employee shell. */
+.appointment-columns {
+  display: grid;
+  grid-template-columns: 440px minmax(0, 1fr);
+  gap: 102px;
+  margin: 32px 0 44px;
+}
+.appointment-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+.appointment-fields h2 {
+  margin-bottom: 10px;
+}
+.appointment-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font: var(--font-label-m);
+}
+.appointment-fields .ui-input {
+  width: 100%;
+}
+.appointment-fields > button {
+  align-self: flex-end;
+  margin-top: -22px;
+}
+.appointment-date {
+  margin: 72px 0 30px;
+  font: var(--font-label-m);
+}
+.appointment-slot-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 112px));
+  gap: 13px 16px;
+}
+.appointment-slot-grid button {
+  height: 42px;
+  border: var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  background: var(--color-bg-surface);
+  font: var(--font-label-m);
+  cursor: pointer;
+}
+.appointment-slot-grid button[aria-pressed='true'] {
+  border: 2px solid var(--color-brand-primary);
+  color: var(--color-brand-primary);
+}
+.appointment-slot-grid button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.appointment-help {
+  font: var(--font-caption);
+  color: var(--color-text-secondary);
+  margin-top: 20px;
+}
+.appointment-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  border-top: var(--border-default);
+  padding-top: 28px;
+}
+.appointment-footer button {
+  min-width: 144px;
+}
+.appointment-nav {
+  display: flex;
+  border-bottom: var(--border-default);
+  gap: 12px;
+  margin-top: 32px;
+}
+.appointment-nav a {
+  width: 120px;
+  padding: 10px 0;
+  color: var(--color-text-secondary);
+  font: var(--font-label-m);
+  text-decoration: none;
+}
+.appointment-nav [aria-current='page'] {
+  color: var(--color-brand-primary);
+  border-bottom: 2px solid var(--color-brand-primary);
+}
+.appointment-filters {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) 130px;
+  gap: 24px;
+  padding: 24px 0 50px;
+  border-bottom: var(--border-default);
+  margin-bottom: 32px;
+  align-items: center;
+}
+.appointment-filters label {
+  font: var(--font-caption);
+  color: var(--color-text-secondary);
+  min-width: 0;
+}
+.appointment-filters .ui-input {
+  width: 100%;
+  font-size: 14px;
+  min-width: 0;
+}
+.appointment-list .staff-section-heading {
+  margin-bottom: 28px;
+}
+.appointment-list .ui-pagination {
+  margin-top: 38px;
+}
+.ui-modal.appointment-panel {
+  width: min(420px, calc(100% - 32px));
+  height: 828px;
+  max-height: calc(100dvh - 48px);
+  padding: 30px;
+  border-radius: 0;
+  position: relative;
+}
+.ui-modal.appointment-panel::backdrop {
+  background: rgb(15 26 33 / 25%);
+}
+.appointment-panel .ui-modal-header {
+  padding-bottom: 24px;
+  border-bottom: var(--border-default);
+}
+.appointment-panel .ui-modal-header h2 {
+  font-size: 20px;
+}
+.appointment-panel dl {
+  margin: 0;
+}
+.appointment-panel dl > div {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 16px;
+  min-height: 65px;
+  padding-top: 24px;
+}
+.appointment-panel dt {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+.appointment-panel dd {
+  margin: 0;
+  font: var(--font-label-m);
+  overflow-wrap: anywhere;
+}
+.appointment-panel .ui-modal-footer {
+  display: flex;
+  flex-direction: column;
+  border-top: var(--border-default);
+  margin-top: 40px;
+  padding-top: 32px;
+  gap: 12px;
+}
+.appointment-panel-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  width: 100%;
+}
+.appointment-panel .ui-modal-footer > a {
+  width: 100%;
+  text-decoration: none;
+}
+.appointment-panel-close {
+  position: absolute;
+  right: 28px;
+  top: 26px;
+  border: 0;
+  background: none;
+  font-size: 24px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+.ui-modal.appointment-cancel {
+  width: min(520px, calc(100% - 32px));
+}
+.appointment-patient-results {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.appointment-patient-results button {
+  width: 100%;
+}
+@media (max-width: 1250px) {
+  .appointment-columns {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    gap: 48px;
+  }
+  .appointment-filters {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .appointment-slot-grid {
+    gap: 12px;
+  }
+}
+@media (max-width: 900px) {
+  .appointment-columns {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 32px;
+  }
+  .appointment-date {
+    margin-top: 24px;
+  }
+  .appointment-slot-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .appointment-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .appointment-footer button {
+    min-width: 0;
+    flex: 1;
+  }
+  .ui-modal.appointment-panel {
+    padding: 24px;
+  }
+  .appointment-panel dl > div {
+    grid-template-columns: 90px minmax(0, 1fr);
+  }
+}
+.appointment-panel .ui-modal-body {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+/* Screens 68:1656: current/selected reschedule slot uses a solid brand fill. */
+.appointment-form[data-figma-node='68:1656']
+  .appointment-slot-grid
+  button[aria-pressed='true'] {
+  background: var(--color-brand-primary);
+  color: var(--color-text-inverse);
+}

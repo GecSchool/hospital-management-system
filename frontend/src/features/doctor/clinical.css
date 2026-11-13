@@ -1,0 +1,315 @@
+.clinical-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 410px) minmax(0, 500px);
+  gap: 64px;
+  padding-top: 40px;
+}
+.clinical-columns > * {
+  min-width: 0;
+}
+.clinical-table {
+  overflow-x: auto;
+  margin-top: 40px;
+}
+.clinical-table .ui-table {
+  min-width: 1016px;
+}
+.clinical-history {
+  border-bottom: var(--border-default);
+  padding: 24px 0;
+  color: var(--color-text-secondary);
+  font: var(--font-body-s);
+}
+.clinical-history[aria-current='true'] {
+  border-left: 3px solid var(--color-brand-primary);
+  padding-left: 12px;
+}
+.clinical-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: var(--font-body-s);
+}
+.clinical-panel h3 {
+  font: var(--font-label-m);
+  margin: 28px 0 8px;
+}
+.clinical-input {
+  width: 100%;
+  min-height: 125px;
+  border: 0;
+  border-radius: 0;
+  border-bottom: var(--border-strong);
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  resize: vertical;
+  font: var(--font-body-s);
+  padding: 12px 0;
+}
+.clinical-panel .ui-form-field {
+  margin-bottom: 28px;
+}
+.clinical-link {
+  border: 0;
+  background: none;
+  color: var(--color-brand-primary);
+  text-decoration: none;
+  cursor: pointer;
+  font: var(--font-body-s);
+  padding: 8px;
+}
+.clinical-close {
+  font-size: 28px;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: var(--color-text-primary);
+}
+.clinical-nursing {
+  margin-top: 28px;
+  border-top: var(--border-default);
+  padding-top: 24px;
+}
+.clinical-nursing nav {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+@media (max-width: 1100px) {
+  .clinical-columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 32px;
+  }
+}
+@media (max-width: 700px) {
+  .clinical-columns {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+  .clinical-panel {
+    grid-row: 1;
+  }
+}
+
+.clinical-versions,
+.clinical-record-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 24px 0;
+  align-items: center;
+}
+.clinical-versions [aria-pressed='true'] {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.clinical-reason {
+  border-top: var(--border-default);
+  margin-top: 24px;
+}
+.doctor-scope .clinical-search {
+  float: right;
+  margin-top: 32px;
+  color: var(--color-text-secondary);
+  font: var(--font-body-s);
+}
+.doctor-scope .clinical-search summary {
+  cursor: pointer;
+}
+.doctor-scope .clinical-patients-title {
+  margin: 48px 0 0;
+}
+.doctor-scope .clinical-table {
+  margin-top: 8px;
+  clear: both;
+  max-width: 1016px;
+}
+.doctor-scope .clinical-table .ui-table {
+  table-layout: fixed;
+}
+.doctor-scope .clinical-table th:nth-child(1),
+.doctor-scope .clinical-table th:nth-child(2) {
+  width: 11.3%;
+}
+.doctor-scope .clinical-table th:nth-child(3) {
+  width: 14.8%;
+}
+.doctor-scope .clinical-table th:nth-child(4) {
+  width: 17.2%;
+}
+.doctor-scope .clinical-table th:nth-child(5) {
+  width: 11.8%;
+}
+.doctor-scope .clinical-table th:nth-child(6) {
+  width: 19.2%;
+}
+.doctor-scope .clinical-table td:nth-child(2) {
+  font-weight: 500;
+}
+.doctor-scope .clinical-table .clinical-link {
+  padding: 0;
+  white-space: nowrap;
+}
+.doctor-scope .clinical-columns {
+  grid-template-columns: minmax(0, 410px) minmax(0, 500px);
+}
+.doctor-scope .clinical-history {
+  display: block;
+  min-height: 148px;
+  padding: 28px 0;
+  text-decoration: none;
+}
+.doctor-scope .clinical-history[aria-current='true'] {
+  position: relative;
+  border-left: 0;
+  padding-left: 0;
+}
+.doctor-scope .clinical-history:hover {
+  color: var(--color-brand-primary);
+}
+.doctor-scope .clinical-history-more {
+  padding: 0;
+}
+.doctor-scope .clinical-latest-reference {
+  margin-top: 24px;
+  font: var(--font-body-s);
+  color: var(--color-text-secondary);
+}
+.doctor-scope .clinical-version-note {
+  font: var(--font-caption);
+  color: var(--color-text-secondary);
+}
+.doctor-scope .clinical-correction-form .clinical-input {
+  min-height: 40px;
+  height: 40px;
+}
+.doctor-scope .clinical-correction-form .ui-form-field {
+  min-height: 71px;
+  margin-bottom: 24px;
+}
+.doctor-scope .clinical-correction-form .clinical-record-actions {
+  justify-content: flex-end;
+  margin-top: 72px;
+}
+.doctor-scope .clinical-correction-form .clinical-record-actions > * {
+  min-width: 128px;
+}
+.doctor-scope .clinical-follow-up {
+  text-align: right;
+  margin-top: 24px;
+}
+.doctor-scope .clinical-panel .clinical-text {
+  padding-bottom: 16px;
+  border-bottom: var(--border-strong);
+  color: var(--color-text-secondary);
+}
+.doctor-scope .clinical-close img {
+  display: block;
+}
+.doctor-scope .doctor-breadcrumb {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  color: var(--color-text-secondary);
+  font: var(--font-caption);
+}
+.doctor-scope .doctor-breadcrumb a {
+  color: inherit;
+  text-decoration: none;
+}
+.doctor-scope .appointment-form .appointment-columns {
+  grid-template-columns: minmax(0, 440px) minmax(0, 500px);
+  gap: 102px;
+  margin: 40px 0 24px;
+}
+.doctor-scope .appointment-form .appointment-fields {
+  gap: 26px;
+}
+.doctor-scope .appointment-form .appointment-fields label {
+  gap: 12px;
+}
+.doctor-scope .appointment-form .appointment-fields input[readonly] {
+  border-bottom-color: transparent;
+  color: var(--color-text-secondary);
+  padding-left: 0;
+}
+.doctor-scope .appointment-form .appointment-footer > * {
+  min-width: 144px;
+}
+.doctor-scope .appointment-form .appointment-slot-grid {
+  grid-template-columns: repeat(4, minmax(0, 112px));
+}
+@media (max-width: 1200px) {
+  .doctor-scope .appointment-form .appointment-columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 48px;
+  }
+}
+@media (max-width: 1100px) {
+  .doctor-scope .clinical-columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 700px) {
+  .doctor-scope .clinical-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .doctor-scope .clinical-history {
+    min-height: 112px;
+  }
+}
+@media (max-width: 900px) {
+  .doctor-scope .appointment-columns {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 32px;
+  }
+  .doctor-scope .appointment-form .appointment-columns {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 32px;
+  }
+  .doctor-scope .appointment-form .appointment-slot-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .doctor-scope .appointment-fields,
+  .doctor-scope .appointment-times {
+    width: 100%;
+    min-width: 0;
+  }
+  .doctor-scope .appointment-slot-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .doctor-scope .appointment-slot-grid button {
+    width: 100%;
+  }
+  .doctor-scope .appointment-footer {
+    flex-wrap: wrap;
+  }
+}
+
+.doctor-scope .clinical-history p + p {
+  margin-top: 12px;
+}
+.doctor-scope .clinical-history[aria-current='true']::before {
+  content: '';
+  position: absolute;
+  left: -12px;
+  top: 28px;
+  width: 3px;
+  height: 82px;
+  background: var(--color-brand-primary);
+}
+.doctor-scope .clinical-correction-form {
+  margin-top: 7px;
+}
+.doctor-scope .appointment-form .page-header {
+  min-height: 84px;
+  padding-bottom: 12px;
+}
+.doctor-scope .appointment-form .appointment-fields h2 {
+  margin-bottom: 0;
+}
+.doctor-scope .appointment-form .appointment-date {
+  margin: 56px 0 20px;
+}
