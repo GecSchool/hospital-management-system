@@ -1,2 +1,8 @@
-// 예정: DEP-06~08 의료진 조회·소속 변경. 미구현이며 라우터에 등록하지 않았습니다.
-export {};
+import { Router } from 'express';
+import { requireAccount, requireRole } from '../../../common/middlewares/auth.js';
+import * as medicalStaffController from '../controllers/medical-staff.controller.js';
+
+export const medicalStaffRouter = Router();
+
+medicalStaffRouter.get('/departments/:departmentId/medical-staff', requireAccount, requireRole('ADMIN'), medicalStaffController.listMedicalStaff);
+medicalStaffRouter.get('/departments/:departmentId/doctors', requireAccount, requireRole('STAFF', 'NURSE', 'ADMIN'), medicalStaffController.listDoctors);
