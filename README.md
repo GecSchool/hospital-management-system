@@ -48,6 +48,12 @@ npm run db:deploy --workspace backend
 
 새 스키마 변경은 `npm run db:migrate --workspace backend -- --name 변경명`으로 마이그레이션을 생성하고 SQL을 검토해 버전 관리합니다. 기존 공유·운영 DB에 적용하기 전에는 데이터와 마이그레이션 이력을 먼저 확인하세요.
 
+## 백엔드 테스트
+
+단위 테스트는 `npm run test:unit --workspace backend`로 실행합니다. HTTP 및 DB 통합 테스트는 `npm run test:integration --workspace backend`로 실행합니다. 전체 테스트는 `npm test --workspace backend`입니다. HTTP 테스트는 로컬 소켓을 열 수 있어야 합니다.
+
+DB 통합 테스트는 기존 개발 DB와 별도의 로컬 PostgreSQL 데이터베이스 `hospital_management_test`가 필요합니다. 직접 DB를 생성하고 `backend/.env.test.example`을 참고해 Git에 포함되지 않는 `backend/.env.test`에 `TEST_DATABASE_URL`을 설정합니다. `npm run db:test:deploy --workspace backend`로 해당 테스트 DB에 마이그레이션을 적용한 뒤 통합 테스트를 실행합니다. 이 명령은 URL이 로컬 `hospital_management_test`가 아니거나 개발 DB와 같으면 중단합니다. 기존 데이터가 있는 DB에 적용하지 마세요. DB가 없거나 연결에 실패하면 통합 테스트는 생략하지 않고 실패합니다.
+
 현재 명세는 업무 규칙과 화면을 토대로 작성한 **초안**입니다. Swagger UI에 표시되는 업무 API가 구현되었다는 뜻은 아닙니다. 구현되지 않은 API는 문서의 요청 실행 기능으로 호출할 수 없습니다. 세션 쿠키 이름, CSRF 설정, 일부 응답 필드와 미결 업무 정책은 구현 전에 팀에서 확정해야 합니다.
 
 ## 디렉터리 구성
