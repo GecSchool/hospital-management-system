@@ -1,0 +1,239 @@
+generator client {
+  provider        = "prisma-client"
+  output          = "../generated/prisma"
+  previewFeatures = ["partialIndexes"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  STAFF
+  DOCTOR
+  NURSE
+  ADMIN
+}
+
+enum AccountStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum DepartmentStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum AppointmentStatus {
+  BOOKED
+  CANCELLED
+}
+
+enum ReceptionStatus {
+  REGISTERED
+  CALLED
+}
+
+enum VisitStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+model Account {
+  id                     String        @id @default(cuid())
+  email                  String        @unique
+  passwordHash           String        @map("password_hash")
+  name                   String
+  role                   Role
+  status                 AccountStatus @default(ACTIVE)
+  doctor                 Doctor?
+  nurse                  Nurse?
+  registeredAppointments Appointment[] @relation("AppointmentRegistrar")
+  cancelledAppointments  Appointment[] @relation("AppointmentCanceller")
+
+  @@map("accounts")
+}
+
+model Department {
+  id           String           @id @default(cuid())
+  name         String           @unique
+  status       DepartmentStatus @default(ACTIVE)
+  doctors      Doctor[]
+  nurses       Nurse[]
+  appointments Appointment[]
+  receptions   Reception[]
+
+  @@map("departments")
+}
+
+model Doctor {
+  accountId        String                  @id @map("account_id")
+  departmentId     String                  @map("department_id")
+  account          Account                 @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  department       Department              @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  availability     DoctorAvailability[]
+  leaves           DoctorLeave[]
+  appointments     Appointment[]
+  receptions       Reception[]
+  clinicalVersions ClinicalRecordVersion[]
+
+  @@index([departmentId])
+  @@map("doctors")
+}
+
+model Nurse {
+  accountId       String                 @id @map("account_id")
+  departmentId    String                 @map("department_id")
+  account         Account                @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  department      Department             @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  nursingRecords  NursingRecord[]
+  nursingVersions NursingRecordVersion[]
+
+  @@index([departmentId])
+  @@map("nurses")
+}
+
+// Times are minutes since midnight; endMinute may be 1440 (24:00).
+model DoctorAvailability {
+  doctorAccountId String @map("doctor_account_id")
+  dayOfWeek       Int    @map("day_of_week") @db.SmallInt
+  startMinute     Int    @map("start_minute") @db.SmallInt
+  endMinute       Int    @map("end_minute") @db.SmallInt
+  doctor          Doctor @relation(fields: [doctorAccountId], references: [accountId], onDelete: Restrict)
+
+  @@id([doctorAccountId, dayOfWeek, startMinute])
+  @@map("doctor_availability")
+}
+
+model DoctorLeave {
+  doctorAccountId String   @map("doctor_account_id")
+  date            DateTime @db.Date
+  doctor          Doctor   @relation(fields: [doctorAccountId], references: [accountId], onDelete: Restrict)
+
+  @@id([doctorAccountId, date])
+  @@map("doctor_leaves")
+}
+
+model Patient {
+  id                       String        @id @default(cuid())
+  patientNumber            String        @unique @map("patient_number")
+  name                     String
+  // Authenticated encryption and a keyed deterministic lookup value are prepared by the application.
+  residentNumberCiphertext Bytes         @map("resident_number_ciphertext")
+  residentNumberLookup     Bytes         @unique @map("resident_number_lookup")
+  birthDate                DateTime      @map("birth_date") @db.Date
+  phone                    String
+  appointments             Appointment[]
+  receptions               Reception[]
+
+  @@index([name, birthDate])
+  @@map("patients")
+}
+
+model Appointment {
+  id                    String            @id @default(cuid())
+  patientId             String            @map("patient_id")
+  doctorAccountId       String            @map("doctor_account_id")
+  departmentId          String            @map("department_id")
+  registeredByAccountId String            @map("registered_by_account_id")
+  startsAt              DateTime          @map("starts_at") @db.Timestamptz(3)
+  status                AppointmentStatus @default(BOOKED)
+  cancelledAt           DateTime?         @map("cancelled_at") @db.Timestamptz(3)
+  cancelledByAccountId  String?           @map("cancelled_by_account_id")
+  patient               Patient           @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  doctor                Doctor            @relation(fields: [doctorAccountId], references: [accountId], onDelete: Restrict)
+  department            Department        @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  registeredBy          Account           @relation("AppointmentRegistrar", fields: [registeredByAccountId], references: [id], onDelete: Restrict)
+  cancelledBy           Account?          @relation("AppointmentCanceller", fields: [cancelledByAccountId], references: [id], onDelete: Restrict)
+  reception             Reception?
+
+  @@unique([doctorAccountId, startsAt], map: "appointments_booked_doctor_time_key", where: { status: "BOOKED" })
+  @@index([patientId, startsAt])
+  @@index([departmentId, startsAt])
+  @@map("appointments")
+}
+
+model Reception {
+  id              String          @id @default(cuid())
+  patientId       String          @map("patient_id")
+  doctorAccountId String          @map("doctor_account_id")
+  departmentId    String          @map("department_id")
+  appointmentId   String?         @unique @map("appointment_id")
+  receivedAt      DateTime        @default(now()) @map("received_at") @db.Timestamptz(3)
+  status          ReceptionStatus @default(REGISTERED)
+  patient         Patient         @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  doctor          Doctor          @relation(fields: [doctorAccountId], references: [accountId], onDelete: Restrict)
+  department      Department      @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  appointment     Appointment?    @relation(fields: [appointmentId], references: [id], onDelete: Restrict)
+  visit           Visit?
+  nursingRecords  NursingRecord[]
+
+  @@index([patientId, receivedAt])
+  @@index([departmentId, receivedAt])
+  @@index([doctorAccountId, receivedAt])
+  @@map("receptions")
+}
+
+model Visit {
+  id             String          @id @default(cuid())
+  receptionId    String          @unique @map("reception_id")
+  status         VisitStatus     @default(IN_PROGRESS)
+  startedAt      DateTime        @default(now()) @map("started_at") @db.Timestamptz(3)
+  completedAt    DateTime?       @map("completed_at") @db.Timestamptz(3)
+  reception      Reception       @relation(fields: [receptionId], references: [id], onDelete: Restrict)
+  clinicalRecord ClinicalRecord?
+
+  @@map("visits")
+}
+
+model ClinicalRecord {
+  id       String                  @id @default(cuid())
+  visitId  String                  @unique @map("visit_id")
+  visit    Visit                   @relation(fields: [visitId], references: [id], onDelete: Restrict)
+  versions ClinicalRecordVersion[]
+
+  @@map("clinical_records")
+}
+
+model ClinicalRecordVersion {
+  recordId         String         @map("record_id")
+  versionNo        Int            @map("version_no")
+  symptoms         String
+  diagnosis        String
+  opinion          String
+  correctionReason String?        @map("correction_reason")
+  authorAccountId  String         @map("author_account_id")
+  createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  record           ClinicalRecord @relation(fields: [recordId], references: [id], onDelete: Restrict)
+  author           Doctor         @relation(fields: [authorAccountId], references: [accountId], onDelete: Restrict)
+
+  @@id([recordId, versionNo])
+  @@map("clinical_record_versions")
+}
+
+model NursingRecord {
+  id                      String                 @id @default(cuid())
+  receptionId             String                 @map("reception_id")
+  originalAuthorAccountId String                 @map("original_author_account_id")
+  reception               Reception              @relation(fields: [receptionId], references: [id], onDelete: Restrict)
+  originalAuthor          Nurse                  @relation(fields: [originalAuthorAccountId], references: [accountId], onDelete: Restrict)
+  versions                NursingRecordVersion[]
+
+  @@index([receptionId])
+  @@map("nursing_records")
+}
+
+model NursingRecordVersion {
+  recordId         String        @map("record_id")
+  versionNo        Int           @map("version_no")
+  content          String
+  correctionReason String?       @map("correction_reason")
+  authorAccountId  String        @map("author_account_id")
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  record           NursingRecord @relation(fields: [recordId], references: [id], onDelete: Restrict)
+  author           Nurse         @relation(fields: [authorAccountId], references: [accountId], onDelete: Restrict)
+
+  @@id([recordId, versionNo])
+  @@map("nursing_record_versions")
+}
