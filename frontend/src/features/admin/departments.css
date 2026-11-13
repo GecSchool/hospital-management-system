@@ -1,0 +1,214 @@
+.admin-workspace .department-grid {
+  display: grid;
+  grid-template-columns: 285px minmax(0, 1fr);
+  gap: 82px;
+  margin-top: 36px;
+}
+.admin-workspace .department-list-heading,
+.admin-workspace .department-staff-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 12px;
+}
+.admin-workspace .department-list-heading label,
+.admin-workspace .department-staff-heading label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: var(--font-caption);
+  color: var(--color-text-secondary);
+}
+.admin-workspace .department-list-heading select,
+.admin-workspace .department-staff-heading select {
+  width: 88px;
+  height: 28px;
+  font: var(--font-caption);
+}
+.admin-workspace .department-list ul {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+}
+.admin-workspace .department-list li {
+  border-bottom: var(--border-default);
+}
+.admin-workspace .department-list li button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  min-height: 64px;
+  padding: 12px 16px 12px 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-primary);
+  font: var(--font-body-s);
+  text-align: left;
+}
+.admin-workspace .department-list li button span:last-child {
+  color: var(--color-text-secondary);
+  font: var(--font-caption);
+}
+.admin-workspace
+  .department-list
+  li
+  button[aria-pressed='true']
+  span:first-child {
+  font-weight: 700;
+  color: var(--color-brand-primary);
+}
+.admin-workspace .department-detail-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 83px;
+  padding-bottom: 24px;
+  border-bottom: var(--border-default);
+}
+.admin-workspace .department-detail-heading h2 {
+  font-size: 22px;
+  line-height: 32px;
+}
+.admin-workspace .department-detail-heading p {
+  margin-top: 6px;
+  color: var(--color-text-secondary);
+  font: var(--font-body-s);
+}
+.admin-workspace .department-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  gap: 12px;
+}
+.admin-workspace .department-actions .ui-button {
+  min-width: 100px;
+  padding: 0 16px;
+}
+.admin-workspace .department-staff-heading {
+  margin-top: 28px;
+}
+.admin-workspace .department-staff-heading h3 {
+  font-size: 17px;
+}
+.admin-workspace .department-staff-table {
+  margin-top: 12px;
+  overflow-x: auto;
+}
+.admin-workspace .department-staff-table .ui-table {
+  min-width: 580px;
+  table-layout: fixed;
+}
+.admin-workspace .department-staff-table thead {
+  height: 0;
+}
+.admin-workspace .department-staff-table th {
+  height: 0;
+  padding: 0;
+  border: 0;
+  font-size: 0;
+}
+.admin-workspace .department-staff-table th:nth-child(1) {
+  width: 39%;
+}
+.admin-workspace .department-staff-table th:nth-child(2) {
+  width: 19%;
+}
+.admin-workspace .department-staff-table th:nth-child(3) {
+  width: 20%;
+}
+.admin-workspace .department-staff-table th:nth-child(4) {
+  width: 22%;
+}
+.admin-workspace .department-staff-table td {
+  height: 56px;
+  padding: 8px 0;
+  overflow-wrap: anywhere;
+}
+.admin-workspace .department-staff-table small {
+  display: block;
+  color: var(--color-text-secondary);
+  font: var(--font-caption);
+}
+.admin-workspace .department-staff-table td:nth-child(2),
+.admin-workspace .department-staff-table td:nth-child(3) {
+  color: var(--color-text-secondary);
+}
+.admin-workspace .department-link {
+  padding: 8px 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-brand-primary);
+  font: var(--font-body-s);
+}
+.admin-workspace .department-detail .ui-pagination {
+  margin-top: 30px;
+}
+.admin-workspace .department-rules {
+  margin-top: 40px;
+  color: var(--color-text-secondary);
+  font: var(--font-body-s);
+}
+.admin-workspace .department-rules p + p {
+  margin-top: 8px;
+}
+.admin-workspace .department-notice {
+  margin-top: 16px;
+  font: var(--font-body-s);
+}
+.admin-workspace .department-form {
+  width: min(560px, calc(100% - 32px));
+  min-height: 340px;
+}
+.admin-workspace .department-form .ui-modal-header h2 {
+  font-size: 21px;
+}
+.admin-workspace .department-form .ui-modal-description {
+  margin-top: 8px;
+}
+.admin-workspace .department-form .ui-modal-body {
+  margin-top: 10px;
+}
+.admin-workspace .department-form .ui-form-field {
+  min-height: 90px;
+  gap: 0;
+}
+.admin-workspace .department-form .ui-form-field > label {
+  color: var(--color-text-secondary);
+}
+.admin-workspace .department-form .ui-input {
+  height: 40px;
+}
+.admin-workspace .department-form .ui-form-field + .ui-form-field {
+  margin-top: 15px;
+}
+.admin-workspace .department-form .ui-modal-footer {
+  margin-top: 45px;
+  gap: 14px;
+}
+.admin-workspace .department-form .ui-modal-footer .ui-button {
+  min-width: 128px;
+}
+.admin-workspace .department-move-form {
+  min-height: 430px;
+}
+.admin-workspace .department-move-form .ui-modal-footer {
+  margin-top: 30px;
+}
+.admin-workspace .department-confirm {
+  width: min(520px, calc(100% - 32px));
+  min-height: 270px;
+}
+.admin-workspace .department-confirm .ui-modal-footer .ui-button {
+  min-width: 112px;
+}
+@media (max-width: 1250px) {
+  .admin-workspace .department-grid {
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: 32px;
+  }
+  .admin-workspace .department-detail-heading {
+    flex-wrap: wrap;
+  }
+}

@@ -1,0 +1,49 @@
+/* Figma Foundations 4:43; component geometry from Components 12:6. */
+:root {
+  --color-brand-primary: #026894;
+  --color-brand-hover: #00516f;
+  --color-brand-subtle: #e5f3f8;
+  --color-bg-canvas: #f4f7f8;
+  --color-bg-surface: #fff;
+  --color-bg-muted: #eaf0f1;
+  --color-text-primary: #172b3a;
+  --color-text-secondary: #526576;
+  --color-text-inverse: #fff;
+  --color-border-default: #d4dfe3;
+  --color-border-strong: #82949b;
+  --color-focus-ring: #1467b8;
+  /* Staff registration overlay 18:225: source paint RGB .06/.10/.13, opacity .44. */
+  --color-overlay: rgb(6% 10% 13% / 44%);
+  --color-success-text: #16714f;
+  --color-success-bg: #e8f5ed;
+  --color-warning-text: #805400;
+  --color-warning-bg: #fff4db;
+  --color-danger-text: #b42318;
+  --color-danger-bg: #fef0ee;
+  --color-info-text: #175cd3;
+  --color-info-bg: #eff6ff;
+  --font-family: 'Noto Sans KR', sans-serif;
+  --font-heading-l: 700 28px / 40px var(--font-family);
+  --font-heading-m: 700 22px / 32px var(--font-family);
+  --font-heading-s: 700 18px / 28px var(--font-family);
+  --font-body-l: 400 16px / 26px var(--font-family);
+  --font-body-m: 400 15px / 24px var(--font-family);
+  --font-body-s: 400 14px / 22px var(--font-family);
+  --font-label-m: 500 14px / 20px var(--font-family);
+  --font-caption: 400 12px / 18px var(--font-family);
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --border-default: 1px solid var(--color-border-default);
+  --border-strong: 1px solid var(--color-border-strong);
+  /* Reviewed source components have no shadow effect. */
+  --shadow-none: none;
+  --shadow-dialog: none;
+}

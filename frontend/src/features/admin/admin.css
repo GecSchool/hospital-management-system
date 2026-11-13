@@ -1,0 +1,252 @@
+.admin-workspace .admin-page h2 {
+  font: var(--font-heading-s);
+}
+.admin-workspace .page-header__actions > .ui-button {
+  min-width: 152px;
+}
+.admin-workspace .admin-metrics-section {
+  margin-top: 36px;
+}
+.admin-workspace .admin-role-metrics {
+  border-bottom: var(--border-default);
+  padding-bottom: 21px;
+}
+.admin-workspace .admin-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 225px));
+  gap: 35px;
+  margin: 25px 0 0;
+}
+.admin-workspace .admin-metrics dt {
+  font: var(--font-body-s);
+  color: var(--color-text-secondary);
+}
+.admin-workspace .admin-metrics dd {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  margin: 4px 0 0;
+}
+.admin-workspace .admin-metrics strong {
+  font: var(--font-heading-l);
+  font-size: 26px;
+  line-height: 38px;
+}
+.admin-workspace .admin-metrics dd span {
+  font: var(--font-body-s);
+  color: var(--color-text-secondary);
+}
+.admin-workspace .admin-department-metrics {
+  margin-top: 45px;
+}
+.admin-workspace .admin-shortcuts {
+  display: flex;
+  gap: 64px;
+  margin-top: 88px;
+  font: var(--font-body-s);
+}
+.admin-workspace .admin-shortcuts a,
+.admin-workspace .admin-link {
+  color: var(--color-brand-primary);
+  text-decoration: none;
+}
+.admin-workspace .admin-filters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 170px)) minmax(130px, 1fr);
+  gap: 60px;
+  margin-top: 26px;
+  align-items: end;
+}
+.admin-workspace .admin-filters > label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font: var(--font-caption);
+  color: var(--color-text-secondary);
+}
+.admin-workspace .admin-filters .ui-input {
+  font: var(--font-body-s);
+}
+.admin-workspace .admin-filters > .ui-button {
+  width: 130px;
+  justify-self: end;
+  margin-bottom: 4px;
+}
+.admin-workspace .admin-account-list {
+  margin-top: 40px;
+}
+.admin-workspace .admin-table {
+  margin-top: 24px;
+  overflow-x: auto;
+}
+.admin-workspace .admin-table .ui-table {
+  width: 1016px;
+  table-layout: fixed;
+}
+.admin-workspace .admin-table th:nth-child(1) {
+  width: 164px;
+}
+.admin-workspace .admin-table th:nth-child(2) {
+  width: 316px;
+}
+.admin-workspace .admin-table th:nth-child(3) {
+  width: 130px;
+}
+.admin-workspace .admin-table th:nth-child(4) {
+  width: 120px;
+}
+.admin-workspace .admin-table th:nth-child(5) {
+  width: 120px;
+}
+.admin-workspace .admin-table th:nth-child(6) {
+  width: 166px;
+}
+.admin-workspace .admin-table td {
+  overflow-wrap: anywhere;
+}
+.admin-workspace .admin-account-list .ui-pagination {
+  max-width: 1016px;
+  margin-top: 36px;
+}
+.admin-workspace .admin-mock-controls {
+  margin-top: 64px;
+  padding-top: 16px;
+  border-top: var(--border-default);
+  color: var(--color-text-secondary);
+  font: var(--font-caption);
+}
+.admin-workspace .admin-mock-controls details {
+  margin-top: 12px;
+}
+.admin-workspace .admin-mock-controls select {
+  margin-left: 12px;
+}
+.admin-workspace .admin-dialog .ui-button {
+  min-height: 44px;
+}
+.admin-workspace .admin-dialog p + p {
+  margin-top: 12px;
+}
+.admin-workspace .admin-dialog {
+  box-shadow: none;
+}
+.admin-workspace .admin-account-panel {
+  width: min(420px, calc(100% - 32px));
+  height: min(828px, calc(100dvh - 72px));
+  border: var(--border-default);
+  padding: 28px 31px;
+  border-radius: 0;
+  position: fixed;
+}
+.admin-workspace .admin-account-panel::backdrop {
+  background: rgb(15 26 33 / 25%);
+}
+.admin-workspace .admin-account-panel .ui-modal-header {
+  padding-bottom: 20px;
+  border-bottom: var(--border-default);
+}
+.admin-workspace .admin-account-panel .ui-modal-header h2 {
+  font-size: 20px;
+  line-height: 28px;
+}
+.admin-workspace .admin-account-panel .ui-modal-body {
+  padding-top: 27px;
+  border-top: 0;
+  margin-top: 0;
+}
+.admin-workspace .admin-account-info {
+  margin: 0;
+}
+.admin-workspace .admin-account-info > div {
+  display: grid;
+  grid-template-columns: 98px minmax(0, 1fr);
+  min-height: 65px;
+  gap: 16px;
+}
+.admin-workspace .admin-account-info dt {
+  color: var(--color-text-secondary);
+  font: var(--font-caption);
+  font-size: 13px;
+}
+.admin-workspace .admin-account-info dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font: var(--font-label-m);
+}
+.admin-workspace .admin-account-panel .ui-modal-footer {
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 32px;
+  border-top: var(--border-default);
+  margin-top: 30px;
+}
+.admin-workspace .admin-panel-close {
+  position: absolute;
+  right: 24px;
+  top: 24px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-text-secondary);
+  font-size: 24px;
+}
+.admin-workspace .admin-panel-notice {
+  font: var(--font-caption);
+  margin-top: 16px;
+}
+.admin-workspace .admin-invite-dialog {
+  width: min(560px, calc(100% - 32px));
+}
+.admin-workspace .admin-invite-dialog .ui-modal-header h2 {
+  font-size: 22px;
+  line-height: 32px;
+}
+.admin-workspace .admin-invite-dialog .ui-modal-description {
+  margin-top: 8px;
+}
+.admin-workspace .admin-invite-dialog .ui-modal-body {
+  border-top: 0;
+  padding-top: 0;
+  margin-top: 18px;
+}
+.admin-workspace .admin-invite-dialog .ui-form-field {
+  min-height: 90px;
+  gap: 0;
+}
+.admin-workspace .admin-invite-dialog .ui-form-field > label {
+  color: var(--color-text-secondary);
+}
+.admin-workspace .admin-invite-dialog .ui-input {
+  height: 40px;
+}
+.admin-workspace .admin-invite-dialog .ui-form-field + .ui-form-field {
+  margin-top: 15px;
+}
+.admin-workspace .admin-invite-help {
+  font: var(--font-caption);
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--color-text-secondary);
+  margin-top: 20px;
+}
+.admin-workspace .admin-invite-dialog .ui-modal-footer {
+  margin-top: 30px;
+}
+.admin-workspace .admin-confirm-dialog {
+  width: min(520px, calc(100% - 32px));
+}
+.admin-workspace .admin-confirm-dialog .ui-modal-footer > .ui-button {
+  min-width: 112px;
+}
+@media (max-width: 1200px) {
+  .admin-workspace .admin-filters {
+    gap: 24px;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) 130px;
+  }
+  .admin-workspace .admin-metrics {
+    gap: 24px;
+  }
+}

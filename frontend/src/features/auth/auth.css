@@ -1,0 +1,169 @@
+.login-page {
+  width: 100%;
+  margin-inline: auto;
+}
+.login-page h1 {
+  font-size: 28px;
+  line-height: 40px;
+  margin: 0;
+}
+.login-description {
+  margin: 7px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 15px;
+  line-height: 24px;
+}
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 34px;
+}
+.login-form > .ui-form-field + .ui-form-field {
+  margin-top: 26px;
+}
+.login-error {
+  color: var(--color-danger-text);
+  margin: 0;
+  font-size: 14px;
+}
+.login-help {
+  border-top: 1px solid var(--color-border-default);
+  margin-top: 36px;
+  padding-top: 20px;
+  font-size: 14px;
+}
+.login-help p {
+  margin: 0 0 12px;
+}
+.login-help p + p {
+  color: var(--color-text-secondary);
+}
+.mock-hint {
+  margin-top: 32px;
+  padding-block: 16px;
+  border-top: 1px solid var(--color-border-default);
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+.mock-hint p {
+  margin: 8px 0;
+}
+/* Screens authentication geometry; shared header adds the requested 20px. */
+.login-page,
+.auth-page {
+  width: 100%;
+  margin-inline: auto;
+}
+.auth-page h1 {
+  font-size: 28px;
+  line-height: 40px;
+  margin: 0;
+}
+.login-actions {
+  margin-top: 3px;
+}
+.login-feedback {
+  min-height: 22px;
+}
+.login-actions .login-error {
+  line-height: 22px;
+}
+.login-actions > .ui-button {
+  margin-top: 13px;
+}
+.login-actions > .ui-button,
+.password-form > .ui-button,
+.auth-link-expired > .ui-button {
+  width: 100%;
+}
+.auth-content--invitation {
+  padding-top: 53px;
+}
+.invitation-info {
+  margin-top: 26px;
+}
+.invitation-info h2 {
+  font-size: 14px;
+  line-height: 22px;
+  margin: 0 0 9px;
+}
+.invitation-info dl {
+  margin: 0;
+  min-height: 167px;
+  padding: 16px 0 21px;
+  border-block: 1px solid var(--color-border-default);
+  font-size: 14px;
+  line-height: 22px;
+}
+.invitation-info dl > div {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 0;
+  margin-bottom: 13px;
+}
+.invitation-info dl > div:last-child {
+  margin-bottom: 0;
+}
+.invitation-info dt {
+  color: var(--color-text-secondary);
+}
+.invitation-info dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.password-form {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  margin-top: 34px;
+}
+.password-form--invitation {
+  margin-top: 26px;
+  gap: 23px;
+}
+.password-form > .ui-button {
+  margin-top: 12px;
+}
+.password-form--invitation > .ui-button {
+  margin-top: 9px;
+}
+.auth-login-link {
+  display: block;
+  margin-top: 36px;
+  font-size: 14px;
+  line-height: 22px;
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+.invitation-info ~ .auth-login-link {
+  margin-top: 22px;
+}
+.auth-link-expired {
+  margin-top: 49px;
+}
+.auth-content--invitation .auth-link-expired {
+  margin-top: 101px;
+}
+.auth-link-expired h1 {
+  font-size: 24px;
+  line-height: 36px;
+}
+.auth-expired-description {
+  color: var(--color-text-secondary);
+  font-size: 15px;
+  line-height: 26px;
+  margin: 19px 0 45px;
+}
+.mock-notice {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 20px;
+  margin-top: 20px;
+}
+.mock-hint details {
+  margin-top: 16px;
+}
+.mock-hint li {
+  margin: 8px 0;
+}

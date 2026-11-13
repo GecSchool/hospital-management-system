@@ -1,3 +1,15 @@
+import { BrowserRouter } from 'react-router';
+import { AppProviders } from './app/providers/AppProviders';
+import { AppErrorBoundary } from './app/providers/AppErrorBoundary';
+import { AppRoutes } from './app/router/routes';
 export default function App() {
-  return <h1>병원 진료 예약 및 환자 관리 시스템</h1>;
+  return (
+    <AppErrorBoundary>
+      <AppProviders>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </AppProviders>
+    </AppErrorBoundary>
+  );
 }

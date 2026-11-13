@@ -1,0 +1,157 @@
+.nurse-page .page-header {
+  flex-wrap: wrap;
+}
+.nurse-page h2 {
+  font: var(--font-heading-s);
+  margin: 32px 0 8px;
+}
+.nurse-date {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.nurse-date input {
+  max-width: 180px;
+}
+.nurse-date > button:not(.ui-button) {
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: var(--color-text-primary);
+}
+.nurse-filters {
+  display: grid;
+  grid-template-columns: 220px 240px minmax(180px, 1fr) 130px;
+  gap: 40px;
+  margin: 24px 0 40px;
+  align-items: end;
+}
+.nurse-filters label {
+  font: var(--font-caption);
+  color: var(--color-text-secondary);
+}
+.nurse-filters .ui-input {
+  width: 100%;
+  min-width: 0;
+}
+.nurse-tabs {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.nurse-tabs button {
+  border: 0;
+  background: none;
+  color: var(--color-text-secondary);
+  padding: 8px 0;
+  font: var(--font-body-s);
+  cursor: pointer;
+}
+.nurse-tabs [aria-pressed='true'] {
+  color: var(--color-brand-primary);
+  border-bottom: 2px solid var(--color-brand-primary);
+}
+.nurse-table {
+  width: calc(100% - 88px);
+}
+.nurse-table .ui-table {
+  min-width: 900px;
+}
+.nurse-table td:last-child {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.nurse-table .ui-button {
+  height: auto;
+  min-height: 36px;
+  padding: 4px 8px;
+  border: 0;
+  background: none;
+  color: var(--color-brand-primary);
+  font-size: 14px;
+}
+.nurse-link {
+  color: var(--color-brand-primary);
+  text-decoration: none;
+  white-space: nowrap;
+  font: var(--font-body-s);
+}
+.nurse-name {
+  color: var(--color-text-primary);
+  text-decoration: none;
+}
+.nurse-page .ui-pagination {
+  margin-top: 36px;
+}
+@media (max-width: 1200px) {
+  .nurse-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+  }
+  .nurse-table {
+    width: 100%;
+  }
+}
+@media (max-width: 900px) {
+  .nurse-scope .app-layout {
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .nurse-scope .app-sidebar__navigation {
+    padding: 16px 24px;
+    border-bottom: var(--border-default);
+  }
+  .nurse-scope .app-sidebar nav {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .nurse-scope .app-header {
+    height: auto;
+    min-height: 64px;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 16px 24px;
+  }
+  .nurse-scope .page-container {
+    padding: 28px 24px;
+  }
+  .nurse-date {
+    flex-wrap: wrap;
+  }
+  .nurse-filters {
+    gap: 16px;
+  }
+  .nurse-tabs {
+    gap: 16px;
+  }
+}
+/* Phase 4C: reuse booking geometry inside the nurse shell. */
+.nurse-scope .staff-table {
+  overflow-x: auto;
+  max-width: 100%;
+}
+.nurse-scope .staff-table .ui-table {
+  min-width: 720px;
+}
+@media (max-width: 900px) {
+  .nurse-scope .appointment-columns {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 32px;
+  }
+  .nurse-scope .appointment-fields,
+  .nurse-scope .appointment-times {
+    width: 100%;
+    min-width: 0;
+  }
+  .nurse-scope .appointment-slot-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .nurse-scope .appointment-slot-grid button {
+    width: 100%;
+  }
+  .nurse-scope .appointment-footer {
+    flex-wrap: wrap;
+  }
+}

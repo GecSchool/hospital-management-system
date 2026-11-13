@@ -1,0 +1,33 @@
+{
+  "frames": 408,
+  "contexts": 66,
+  "screens": 34,
+  "prototypeFrames": 373,
+  "flows": 18,
+  "starts": 12,
+  "reactions": 3500,
+  "visible": 2920,
+  "hidden": 580,
+  "reactionVerdicts": {
+    "PASS": 1515,
+    "NOT_VERIFIED": 30,
+    "FAIL": 6,
+    "PARTIAL": 883,
+    "N/A": 580,
+    "NOT_IMPLEMENTED": 486
+  },
+  "frameVerdicts": {
+    "PASS": 28,
+    "PARTIAL": 159,
+    "NOT_VERIFIED": 218,
+    "NOT_IMPLEMENTED": 3
+  },
+  "issues": {
+    "P1": 7,
+    "P2": 12,
+    "P3": 2
+  },
+  "issueCount": 21,
+  "apiConflicts": 0,
+  "unresolvedDesign": 2
+}

@@ -1,0 +1,155 @@
+/* Staff Screens 26:591, 83:1844; Prototype confirmations 193:8966/8997. */
+.reception-nav {
+  display: flex;
+  gap: 12px;
+  margin-top: 32px;
+  border-bottom: var(--border-default);
+}
+.reception-nav a {
+  flex: 0 0 120px;
+  padding: 10px 0;
+  color: var(--color-text-secondary);
+  font: var(--font-label-m);
+  text-decoration: none;
+}
+.reception-nav [aria-current='page'] {
+  color: var(--color-brand-primary);
+  border-bottom: 2px solid var(--color-brand-primary);
+}
+.reception-filters {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr)) 100px;
+  gap: 16px;
+  align-items: center;
+  margin: 28px 0;
+}
+.reception-filters label {
+  font: var(--font-caption);
+  color: var(--color-text-secondary);
+  min-width: 0;
+}
+.reception-filters .ui-input {
+  width: 100%;
+  min-width: 0;
+  font-size: 14px;
+}
+.reception-date {
+  color: var(--color-text-secondary);
+  font: var(--font-body-m);
+  margin: 28px 0 32px;
+}
+.reception-list .staff-section-heading {
+  margin-bottom: 24px;
+}
+.reception-list .ui-pagination {
+  margin-top: 38px;
+}
+.reception-table .ui-table {
+  min-width: 900px;
+}
+.reception-table th:nth-child(1) {
+  width: 11%;
+}
+.reception-table th:nth-child(2) {
+  width: 15%;
+}
+.reception-table th:nth-child(3) {
+  width: 16%;
+}
+.reception-table th:nth-child(4) {
+  width: 16%;
+}
+.reception-table th:nth-child(5) {
+  width: 16%;
+}
+.reception-table th:nth-child(6) {
+  width: 16%;
+}
+.reception-table th:nth-child(7) {
+  width: 10%;
+}
+.reception-text-button {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--color-brand-primary);
+  font: var(--font-body-s);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.reception-text-button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.ui-modal.reception-confirm {
+  width: min(520px, calc(100% - 32px));
+  min-height: 270px;
+}
+.ui-modal.reception-confirm::backdrop,
+.ui-modal.reception-walkin::backdrop {
+  background: rgb(15 26 33 / 35%);
+}
+.reception-confirm .ui-modal-footer button {
+  min-width: 112px;
+}
+.ui-modal.reception-walkin {
+  width: min(560px, calc(100% - 32px));
+  min-height: 430px;
+}
+.reception-walkin .ui-modal-header h2 {
+  font-size: 21px;
+}
+.reception-walkin .ui-modal-description {
+  margin-top: 12px;
+}
+.reception-walkin .ui-modal-body {
+  margin-top: 20px;
+  padding-top: 24px;
+  display: grid;
+  gap: 24px;
+}
+.reception-walkin .ui-input {
+  width: 100%;
+}
+.reception-walkin .ui-modal-footer {
+  margin-top: 28px;
+}
+.reception-walkin .ui-modal-footer button {
+  min-width: 128px;
+}
+.reception-detail-values {
+  margin: 0;
+  display: grid;
+  gap: 16px;
+}
+.reception-detail-values > div {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr);
+  gap: 16px;
+}
+.reception-detail-values dt {
+  color: var(--color-text-secondary);
+}
+.reception-detail-values dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.reception-eligibility {
+  font: var(--font-caption);
+  color: var(--color-text-secondary);
+}
+@media (max-width: 1250px) {
+  .reception-filters {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 900px) {
+  .reception-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .reception-confirm .ui-modal-footer button,
+  .reception-walkin .ui-modal-footer button {
+    min-width: 0;
+    flex: 1;
+  }
+}
