@@ -8,6 +8,24 @@ import {
   parseDoctorsQuery,
   parseMedicalStaffQuery,
 } from '../validations/medical-staff.validation.js';
+import { parseAccountId } from '../../account/validations/account-query.validation.js';
+
+export const changeDepartment: RequestHandler = async (req, res) => {
+  const actor = res.locals.account as AccountContext;
+  const body = req.body as unknown;
+  const departmentId =
+    typeof body === 'object' && body !== null && 'departmentId' in body
+      ? parseDepartmentId(body.departmentId)
+      : parseDepartmentId(undefined);
+  sendData(
+    res,
+    await medicalStaffService.changeDepartment(
+      actor.id,
+      parseAccountId(req.params.accountId),
+      departmentId,
+    ),
+  );
+};
 
 export const listMedicalStaff: RequestHandler = async (req, res) => {
   const departmentId = parseDepartmentId(req.params.departmentId);
