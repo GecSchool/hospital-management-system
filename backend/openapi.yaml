@@ -4578,7 +4578,7 @@ components:
                 - null
         doctorId:
           type: string
-          description: 본인 인증 응답에서 의사는 필수, 그 외 역할은 null. 계정 ID와 구분한다.
+          description: 본인 인증 응답에서 의사는 필수, 그 외 역할은 null. 의사 계정 ID와 같다.
           nullable: true
       required:
         - id
