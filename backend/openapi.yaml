@@ -70,7 +70,7 @@ info:
     9. **의사 미처리 업무:** 오늘 이후 미접수 유효 예약 및 미완료 접수·진료가 있으면 계정 비활성화·소속 변경을 제한한다. 지난 날짜의 미접수 예약은 제한하지 않는다. 비활성 계정도
     비밀번호를 재설정할 수 있으나 자동 활성화되지는 않는다.
 
-    10. **환자 주민등록번호:** 중복 등록은 허용하지 않는다. 번호 변경 허용 여부와 추가 필수값·보호 저장의 세부 정책은 미정이다. 변경을 허용할 경우에도 중복은 허용하지 않는다. 미변경 시 생략, 응답 마스킹.
+    10. **환자 주민등록번호:** 중복 등록은 허용하지 않는다. 직원은 번호를 변경할 수 있으며 다른 환자와 중복은 허용하지 않는다. 새 암호문·중복 조회값·생년월일을 함께 갱신한다. 미변경 시 생략하고 응답을 마스킹한다. 추가 필수값은 미정이다.
 
     11. **관리자 목록·초대:** 별도 검색 조건과 활성 계정 집계는 확정. SMTP 요청 실패 후 재시도·Redis/DB 실패 복구는 구현 전에 정한다.
 
@@ -880,6 +880,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "404":
+          description: 대상 없음
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "500":
           description: 서버 오류
           content:
@@ -1490,6 +1496,12 @@ paths:
                 $ref: "#/components/schemas/Error"
         "409":
           description: "`409 DOCTOR_HAS_PENDING_WORK`"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: 대상 없음
           content:
             application/json:
               schema:
@@ -2168,6 +2180,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "404":
+          description: 대상 없음
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "500":
           description: 서버 오류
           content:
@@ -2189,7 +2207,7 @@ paths:
 
         **원본 계약:** `{name?,residentNumber?,phone?,...}` → `PatientDetail`
 
-        **업무 규칙:** 응답은 마스킹. 변경하지 않을 주민등록번호는 필드를 생략하며 마스킹 문자열은 유효한 원본 입력이 아니다. 번호 변경 허용 여부는 §12. 변경을 허용하는 경우 다른 환자와 중복되면 `409 RESIDENT_NUMBER_DUPLICATE`.
+        **업무 규칙:** 응답은 마스킹. 변경하지 않을 주민등록번호는 필드를 생략하며 마스킹 문자열은 유효한 원본 입력이 아니다. 번호 변경을 허용하며 다른 환자와 중복되면 `409 RESIDENT_NUMBER_DUPLICATE`. 새 암호문·중복 조회값·생년월일을 함께 갱신한다.
       parameters:
         - name: patientId
           in: path
@@ -2234,6 +2252,12 @@ paths:
                 $ref: "#/components/schemas/Error"
         "409":
           description: 주민등록번호 중복 (`RESIDENT_NUMBER_DUPLICATE`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: 대상 없음
           content:
             application/json:
               schema:
