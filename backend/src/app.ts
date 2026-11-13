@@ -7,9 +7,14 @@ import { AppError, errorHandler, requestId } from './common/errors/index.js';
 import { config, type AppConfig } from './config/env.js';
 import { systemRouter } from './modules/system/system.routes.js';
 import { apiRouter } from './routes/index.js';
+import type { AccountProvider } from './common/middlewares/auth.js';
 
-export function createApp(settings: AppConfig) {
+type AppDependencies = { accountProvider?: AccountProvider };
+
+export function createApp(settings: AppConfig, dependencies: AppDependencies = {}) {
   const app = express();
+  // 실제 세션이 연결되기 전에는 인증 제공자가 없어 보호된 요청을 거부한다.
+  app.locals.accountProvider = dependencies.accountProvider;
   app.disable('x-powered-by');
   app.use(requestId);
   // Swagger UI의 인라인 초기화 스크립트는 문서 경로에 한해 CSP를 적용하지 않는다.
