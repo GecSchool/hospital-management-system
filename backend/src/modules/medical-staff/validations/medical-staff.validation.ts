@@ -13,9 +13,11 @@ export function parseDepartmentId(value: unknown): string {
 
 export function parseMedicalStaffQuery(query: Record<string, unknown>) {
   const value = query.role;
-  if (value !== undefined && typeof value !== 'string') throw new AppError(400, 'VALIDATION_ERROR', 'role 값이 올바르지 않습니다.');
+  if (value !== undefined && typeof value !== 'string')
+    throw new AppError(400, 'VALIDATION_ERROR', 'role 값이 올바르지 않습니다.');
   const role = value?.trim() || undefined;
-  if (role && !roles.includes(role as Role)) throw new AppError(400, 'VALIDATION_ERROR', 'role 값이 올바르지 않습니다.');
+  if (role && !roles.includes(role as Role))
+    throw new AppError(400, 'VALIDATION_ERROR', 'role 값이 올바르지 않습니다.');
   const pagination = parsePage(query);
   if (pagination.size > 2147483647 || pagination.skip > 2147483647) {
     throw new AppError(400, 'VALIDATION_ERROR', '페이지 범위가 너무 큽니다.');
