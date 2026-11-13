@@ -52,7 +52,15 @@ npm run db:deploy --workspace backend
 
 단위 테스트는 `npm run test:unit --workspace backend`로 실행합니다. HTTP 및 DB 통합 테스트는 `npm run test:integration --workspace backend`로 실행합니다. 전체 테스트는 `npm test --workspace backend`입니다. HTTP 테스트는 로컬 소켓을 열 수 있어야 합니다.
 
+도메인과 공통 코드의 테스트는 대상 파일 옆에 `*.unit.test.ts` 또는 `*.integration.test.ts`로 둡니다. 여러 도메인을 가로지르는 테스트와 공통 테스트 데이터는 `backend/tests/`에 두며, `backend/scripts/`의 단위 테스트도 같은 명명 규칙을 따릅니다. 두 Vitest 설정은 이 이름으로 실행 대상을 분리하고, TypeScript 배포 빌드에서는 테스트 파일을 제외합니다.
+
 DB 통합 테스트는 기존 개발 DB와 별도의 로컬 PostgreSQL 데이터베이스 `hospital_management_test`가 필요합니다. 직접 DB를 생성하고 `backend/.env.test.example`을 참고해 Git에 포함되지 않는 `backend/.env.test`에 `TEST_DATABASE_URL`을 설정합니다. `npm run db:test:deploy --workspace backend`로 해당 테스트 DB에 마이그레이션을 적용한 뒤 통합 테스트를 실행합니다. 이 명령은 URL이 로컬 `hospital_management_test`가 아니거나 개발 DB와 같으면 중단합니다. 기존 데이터가 있는 DB에 적용하지 마세요. DB가 없거나 연결에 실패하면 통합 테스트는 생략하지 않고 실패합니다.
+
+## 백엔드 공통 구조
+
+도메인별 라우터·컨트롤러·서비스를 `backend/src/modules/`에 두고, 업무 라우터는 `backend/src/routes/index.ts`에 등록합니다. 환경 설정·Prisma 생성은 `src/config/`, 공통 오류·응답·미들웨어·도구는 `src/common/`에 둡니다. 구조와 의존 관계는 [백엔드 아키텍처](docs/backend-architecture.md)를 참고하세요.
+
+Prisma 클라이언트 생성 위치는 `backend/src/generated/prisma/`이며 Git에 포함하지 않습니다. 클론하거나 스키마를 변경한 뒤 `npm run prisma:generate --workspace backend`를 먼저 실행해야 빌드 및 Prisma를 사용하는 테스트를 실행할 수 있습니다. 인증 연결점은 실제 세션에 아직 연결되지 않았고 테스트용 인증 우회는 등록되어 있지 않습니다. 업무 API를 추가할 때 팀원의 세션 구현과 매 요청 최신 계정 상태·역할·소속을 확인하는 제공자를 연결하고, 리소스별 접근 범위를 별도로 검증해야 합니다.
 
 현재 명세는 업무 규칙과 화면을 토대로 작성한 **초안**입니다. Swagger UI에 표시되는 업무 API가 구현되었다는 뜻은 아닙니다. 구현되지 않은 API는 문서의 요청 실행 기능으로 호출할 수 없습니다. 세션 쿠키 이름, CSRF 설정, 일부 응답 필드와 미결 업무 정책은 구현 전에 팀에서 확정해야 합니다.
 

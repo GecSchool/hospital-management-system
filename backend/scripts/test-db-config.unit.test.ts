@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { testDatabaseUrl } from '../../scripts/test-db-config.mjs';
+import { testDatabaseUrl } from './test-db-config.mjs';
 
 const originalTest = process.env.TEST_DATABASE_URL;
 const originalDev = process.env.DATABASE_URL;
