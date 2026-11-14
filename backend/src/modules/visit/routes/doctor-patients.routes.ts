@@ -1,2 +1,5 @@
-// 예정: VIS-01 의사 환자 목록. 미구현이며 라우터에 등록하지 않았습니다.
-export {};
+import { Router } from 'express';
+import { requireAccount, requireRole } from '../../../common/middlewares/auth.js';
+import { listDoctorPatients } from '../controllers/doctor-patients.controller.js';
+export const doctorPatientsRouter = Router();
+doctorPatientsRouter.get('/me/patients', requireAccount, requireRole('DOCTOR'), listDoctorPatients);

@@ -7,6 +7,12 @@ import { leaveRouter } from '../modules/doctor-schedule/routes/leave.routes.js';
 import { appointmentSlotsRouter } from '../modules/doctor-schedule/routes/appointment-slots.routes.js';
 import { appointmentRouter } from '../modules/appointment/routes/appointment.routes.js';
 import { receptionRouter } from '../modules/reception/routes/reception.routes.js';
+import { followUpRouter } from '../modules/appointment/routes/follow-up.routes.js';
+import { doctorPatientsRouter } from '../modules/visit/routes/doctor-patients.routes.js';
+import { clinicalHistoryRouter } from '../modules/clinical-record/routes/clinical-history.routes.js';
+import { visitQueryRouter } from '../modules/visit/routes/visit-query.routes.js';
+import { clinicalRecordQueryRouter } from '../modules/clinical-record/routes/clinical-record-query.routes.js';
+import { clinicalRecordWriteRouter } from '../modules/clinical-record/routes/clinical-record-write.routes.js';
 import { callingRouter } from '../modules/reception/routes/calling.routes.js';
 
 export const apiRouter = Router();
@@ -19,3 +25,10 @@ apiRouter.use(appointmentSlotsRouter);
 apiRouter.use('/appointments', appointmentRouter);
 apiRouter.use('/receptions', receptionRouter);
 apiRouter.use(callingRouter);
+
+apiRouter.use(followUpRouter);
+apiRouter.use('/visits', visitQueryRouter);
+apiRouter.use(clinicalRecordQueryRouter);
+apiRouter.use(clinicalRecordWriteRouter);
+apiRouter.use('/doctors', doctorPatientsRouter);
+apiRouter.use(clinicalHistoryRouter);
