@@ -1,2 +1,10 @@
-// 예정: NUR-06 환자 간호 이력. 미구현이며 라우터에 등록하지 않았습니다.
-export {};
+import { Router } from 'express';
+import { requireAccount, requireRole } from '../../../common/middlewares/auth.js';
+import { get } from '../controllers/nursing-history.controller.js';
+export const nursingHistoryRouter = Router();
+nursingHistoryRouter.get(
+  '/patients/:patientId/nursing-records',
+  requireAccount,
+  requireRole('NURSE'),
+  get,
+);

@@ -13,6 +13,9 @@ import { clinicalHistoryRouter } from '../modules/clinical-record/routes/clinica
 import { visitQueryRouter } from '../modules/visit/routes/visit-query.routes.js';
 import { clinicalRecordQueryRouter } from '../modules/clinical-record/routes/clinical-record-query.routes.js';
 import { clinicalRecordWriteRouter } from '../modules/clinical-record/routes/clinical-record-write.routes.js';
+import { nursingRecordQueryRouter } from '../modules/nursing-record/routes/nursing-record-query.routes.js';
+import { nursingRecordWriteRouter } from '../modules/nursing-record/routes/nursing-record-write.routes.js';
+import { nursingHistoryRouter } from '../modules/nursing-record/routes/nursing-history.routes.js';
 import { callingRouter } from '../modules/reception/routes/calling.routes.js';
 
 export const apiRouter = Router();
@@ -32,3 +35,6 @@ apiRouter.use(clinicalRecordQueryRouter);
 apiRouter.use(clinicalRecordWriteRouter);
 apiRouter.use('/doctors', doctorPatientsRouter);
 apiRouter.use(clinicalHistoryRouter);
+apiRouter.use(nursingRecordQueryRouter);
+apiRouter.use(nursingRecordWriteRouter);
+apiRouter.use(nursingHistoryRouter);
