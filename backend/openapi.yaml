@@ -1594,6 +1594,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "404":
+          description: 대상 의사 없음
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "500":
           description: 서버 오류
           content:
@@ -1715,7 +1721,7 @@ paths:
 
         **원본 계약:** query `from`, `to` → 휴진 목록
 
-        **업무 규칙:** 날짜 범위 필수.
+        **업무 규칙:** 날짜 범위 필수. 시작일은 종료일 이하여야 한다.
       parameters:
         - name: doctorId
           in: path
@@ -1770,6 +1776,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "404":
+          description: 대상 의사 없음
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "500":
           description: 서버 오류
           content:
@@ -1787,7 +1799,7 @@ paths:
 
         **원본 계약:** `{date}` → `201 {date}`
 
-        **업무 규칙:** 취소되지 않은 예약이 해당 날짜에 있으면 `409 LEAVE_HAS_BOOKING`; 중복 휴진 `409`. 일자 전체 휴진 기준.
+        **업무 규칙:** 서울 기준 과거 날짜는 `400 VALIDATION_ERROR`. 취소되지 않은 예약이 해당 날짜에 있으면 `409 LEAVE_HAS_BOOKING`; 중복 휴진 `409`. 일자 전체 휴진 기준.
       parameters: []
       responses:
         "201":

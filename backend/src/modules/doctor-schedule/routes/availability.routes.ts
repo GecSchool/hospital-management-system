@@ -1,2 +1,16 @@
-// 예정: SCH-01~02 주간 진료 가능 시간. 미구현이며 라우터에 등록하지 않았습니다.
-export {};
+import { Router } from 'express';
+import { requireAccount, requireRole } from '../../../common/middlewares/auth.js';
+import * as controller from '../controllers/availability.controller.js';
+export const availabilityRouter = Router();
+availabilityRouter.get(
+  '/doctors/:doctorId/availability',
+  requireAccount,
+  requireRole('DOCTOR', 'STAFF', 'NURSE'),
+  controller.get,
+);
+availabilityRouter.put(
+  '/doctors/me/availability',
+  requireAccount,
+  requireRole('DOCTOR'),
+  controller.replace,
+);

@@ -136,8 +136,8 @@
 | DEP-08 | `PATCH /medical-staff/{accountId}/department` | ADMIN | `{departmentId}` → 변경된 `AccountSummary` | 대상 과 활성 확인. 의사에게 오늘 이후의 미접수 유효 예약 또는 미완료 접수·진료가 있으면 `409 DOCTOR_HAS_PENDING_WORK`. 과거 미접수 예약은 차단하지 않는다. 과거 접수의 진료과는 당시 값 유지. |
 | SCH-01 | `GET /doctors/{doctorId}/availability` | DOCTOR(본인), STAFF, NURSE(본인 과) | → `{doctorId,intervalMinutes:20,weeklySlots:[{dayOfWeek,startTime,endTime}]}` | 요일 0=일요일~6=토요일의 매주 반복 구간을 반환한다. 구간은 요일 숫자와 시작 시각 오름차순이며 연속 구간은 합쳐 반환한다. 간호사는 본인 과. 관리 기능의 관리자 접근은 §12. |
 | SCH-02 | `PUT /doctors/me/availability` | DOCTOR | `{weeklySlots:[{dayOfWeek,startTime,endTime}]}` → `200 {doctorId,intervalMinutes:20,weeklySlots:[...]}` | 본인의 주간 시간표 전체 교체. 앞으로 남은 유효 예약과 충돌하면 `409 AVAILABILITY_CONFLICT`이며 기존 시간표를 유지한다. 날짜·시간 경계 및 구간 규칙은 아래 참조. 성공 시 정규화된 전체 시간표를 반환한다. |
-| SCH-03 | `GET /doctors/{doctorId}/leaves` | DOCTOR(본인), STAFF, NURSE(본인 과) | query `from`, `to` → 휴진 목록 | 날짜 범위 필수. |
-| SCH-04 | `POST /doctors/me/leaves` | DOCTOR | `{date}` → `201 {date}` | 취소되지 않은 예약이 해당 날짜에 있으면 `409 LEAVE_HAS_BOOKING`; 중복 휴진 `409`. 일자 전체 휴진 기준. |
+| SCH-03 | `GET /doctors/{doctorId}/leaves` | DOCTOR(본인), STAFF, NURSE(본인 과) | query `from`, `to` → 휴진 목록 | 날짜 범위 필수이며 시작일은 종료일 이하. |
+| SCH-04 | `POST /doctors/me/leaves` | DOCTOR | `{date}` → `201 {date}` | 서울 기준 과거 날짜는 `400 VALIDATION_ERROR`. 취소되지 않은 예약이 해당 날짜에 있으면 `409 LEAVE_HAS_BOOKING`; 중복 휴진 `409`. 일자 전체 휴진 기준. |
 | SCH-05 | `GET /doctors/{doctorId}/appointment-slots` | STAFF, NURSE(본인 과), DOCTOR(본인 재진) | query `date`, `excludeAppointmentId?` → `{date,intervalMinutes:20,slots:[{startsAt,available,reason?}]}` | 예약 변경 시 STAFF가 변경할 본인 대상 예약 ID를 전달하면 해당 예약만 점유 검사에서 제외. 예약의 의사와 경로 의사 일치 및 변경 권한·유효 상태를 서버에서 확인한다. 다른 예약·휴진·진료 가능 시간 제약은 그대로 적용. 일반 예약 조회는 생략. 같은 의사·날짜·시간의 유효 예약은 한 건만 가능. |
 
 
