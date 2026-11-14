@@ -3,7 +3,7 @@ import type { parseNursingHistoryQuery } from '../validations/nursing-history.va
 import { AppError } from '../../../common/errors/index.js';
 import { encodeCursor } from '../../../common/utils/cursor.js';
 import { getPrismaClient } from '../../../config/prisma.js';
-import { nursingRecordSelect, toNursingRecord } from './nursing-record-query.service.js';
+import { nursingListPageSelect, hydrateNursingListPage } from './nursing-record-query.service.js';
 /** NUR-06: 선택 접수의 환자와 간호사 소속 과를 검증하고, 같은 환자·과의 모든 간호기록을 반환한다.
  * 선택 접수 전후 날짜를 모두 포함하고 최신 limit 묶음 안에서는 최초 작성시각·ID의 과거→현재 순이다. */
 export async function getNursingHistory(
@@ -34,7 +34,7 @@ export async function getNursingHistory(
         ],
       }),
     },
-    select: { createdAt: true, recordId: true, record: { select: nursingRecordSelect } },
+    select: nursingListPageSelect,
     orderBy: [{ createdAt: 'desc' }, { recordId: 'desc' }],
     take: query.limit + 1,
   });
@@ -42,7 +42,7 @@ export async function getNursingHistory(
   const page = rows.slice(0, query.limit).reverse();
   const oldest = page[0];
   return {
-    data: page.map((x) => toNursingRecord(x.record)),
+    data: await hydrateNursingListPage(db, page),
     meta: {
       nextBefore:
         hasMore && oldest
