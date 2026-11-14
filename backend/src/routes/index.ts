@@ -4,6 +4,8 @@ import { medicalStaffRouter } from '../modules/medical-staff/routes/medical-staf
 import { patientRouter } from '../modules/patient/routes/patient.routes.js';
 import { availabilityRouter } from '../modules/doctor-schedule/routes/availability.routes.js';
 import { leaveRouter } from '../modules/doctor-schedule/routes/leave.routes.js';
+import { appointmentSlotsRouter } from '../modules/doctor-schedule/routes/appointment-slots.routes.js';
+import { appointmentRouter } from '../modules/appointment/routes/appointment.routes.js';
 
 export const apiRouter = Router();
 apiRouter.use('/accounts', accountRouter);
@@ -11,3 +13,5 @@ apiRouter.use(medicalStaffRouter);
 apiRouter.use('/patients', patientRouter);
 apiRouter.use(availabilityRouter);
 apiRouter.use(leaveRouter);
+apiRouter.use(appointmentSlotsRouter);
+apiRouter.use('/appointments', appointmentRouter);

@@ -1,2 +1,10 @@
-// 예정: SCH-05 예약 가능 시간 조회. 미구현이며 라우터에 등록하지 않았습니다.
-export {};
+import { Router } from 'express';
+import { requireAccount, requireRole } from '../../../common/middlewares/auth.js';
+import { get } from '../controllers/appointment-slots.controller.js';
+export const appointmentSlotsRouter = Router();
+appointmentSlotsRouter.get(
+  '/doctors/:doctorId/appointment-slots',
+  requireAccount,
+  requireRole('STAFF', 'NURSE', 'DOCTOR'),
+  get,
+);

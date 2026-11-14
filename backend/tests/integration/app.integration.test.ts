@@ -17,7 +17,15 @@ describe('HTTP 서버 준비 상태', () => {
 
   it('미구현 뼈대만 있는 도메인은 API로 등록하지 않는다', async () => {
     expect((await request(app).get('/api/v1/departments')).status).toBe(404);
-    expect((await request(app).get('/api/v1/appointments')).status).toBe(404);
+    expect((await request(app).get('/api/v1/receptions')).status).toBe(404);
+  });
+
+  it('예약 API는 실제 앱에서 인증하지 않으면 차단한다', async () => {
+    expect((await request(app).get('/api/v1/appointments')).status).toBe(401);
+    expect((await request(app).post('/api/v1/appointments').send({})).status).toBe(401);
+    expect(
+      (await request(app).get('/api/v1/doctors/example/appointment-slots?date=2030-01-01')).status,
+    ).toBe(401);
   });
 
   it('API에는 보안 헤더를 적용하고 Swagger UI를 정상 제공한다', async () => {
