@@ -49,12 +49,24 @@ async function requireClinicalAccess(recordId: string, actor: AccountContext) {
 /** VIS-05: 환자 접근 권한을 확인하고 최신 진료 기록과 원본·정정 버전 요약을 반환한다. */
 export async function getClinicalRecord(recordId: string, actor: AccountContext) {
   const record = await requireClinicalAccess(recordId, actor);
-  const rows = await getPrismaClient().clinicalRecordVersion.findMany({
+  const db = getPrismaClient();
+  // 이력 목록에는 메타데이터만 읽고, 그 목록이 선택한 마지막 버전의 본문만 조회한다.
+  // 두 조회 사이에 새 정정이 생겨도 응답의 최신 본문은 같은 응답의 마지막 버전과 일치한다.
+  const rows = await db.clinicalRecordVersion.findMany({
     where: { recordId },
-    select: clinicalVersionSelect,
+    select: {
+      versionNo: true,
+      createdAt: true,
+      author: { select: { account: { select: accountSummarySelect } } },
+    },
     orderBy: { versionNo: 'asc' },
   });
-  const latest = rows.at(-1);
+  const latestMeta = rows.at(-1);
+  if (!latestMeta) throw new AppError(409, 'CONFLICT', '진료 기록 버전이 없습니다.');
+  const latest = await db.clinicalRecordVersion.findUnique({
+    where: { recordId_versionNo: { recordId, versionNo: latestMeta.versionNo } },
+    select: clinicalVersionSelect,
+  });
   if (!latest) throw new AppError(409, 'CONFLICT', '진료 기록 버전이 없습니다.');
   return {
     id: record.id,
