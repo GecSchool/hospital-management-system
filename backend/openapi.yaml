@@ -1938,6 +1938,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "404":
+          description: 대상 없음 또는 해당 의사의 예약이 아님
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: 취소되었거나 접수된 변경 대상 예약
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "500":
           description: 서버 오류
           content:
@@ -2423,6 +2435,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "404":
+          description: 대상 없음 또는 해당 의사의 예약이 아님
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "409":
           description: "`409 SLOT_UNAVAILABLE`"
           content:
@@ -2626,6 +2644,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "404":
+          description: 대상 없음 또는 해당 의사의 예약이 아님
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "500":
           description: 서버 오류
           content:
@@ -2694,8 +2718,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "404":
+          description: 대상 없음 또는 해당 의사의 예약이 아님
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "409":
-          description: "`409 SLOT_UNAVAILABLE`, `409 APPOINTMENT_ALREADY_RECEIVED`"
+          description: "`409 SLOT_UNAVAILABLE`, `409 APPOINTMENT_ALREADY_RECEIVED`, 취소된 예약은 `409 CONFLICT`"
           content:
             application/json:
               schema:
@@ -2773,8 +2803,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "404":
+          description: 대상 없음 또는 해당 의사의 예약이 아님
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "409":
-          description: "`409 APPOINTMENT_ALREADY_RECEIVED`"
+          description: "`409 APPOINTMENT_ALREADY_RECEIVED`, 취소된 예약은 `409 CONFLICT`"
           content:
             application/json:
               schema:
