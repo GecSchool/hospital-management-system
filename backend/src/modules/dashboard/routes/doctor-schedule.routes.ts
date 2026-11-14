@@ -1,2 +1,6 @@
-// 예정: DASH-02 의사 일정. 미구현이며 라우터에 등록하지 않았습니다.
-export {};
+import { Router } from 'express';
+import { requireAccount, requireRole } from '../../../common/middlewares/auth.js';
+import * as controller from '../controllers/doctor-schedule.controller.js';
+/** DASH-02: 의사 전용 일정 조회 경로를 제공한다. */
+export const doctorScheduleRouter = Router();
+doctorScheduleRouter.get('/me/schedule', requireAccount, requireRole('DOCTOR'), controller.get);

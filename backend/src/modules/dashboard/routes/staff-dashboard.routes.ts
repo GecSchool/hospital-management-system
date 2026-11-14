@@ -1,2 +1,11 @@
-// 예정: DASH-01 직원 대시보드. 미구현이며 라우터에 등록하지 않았습니다.
-export {};
+import { Router } from 'express';
+import { requireAccount, requireRole } from '../../../common/middlewares/auth.js';
+import { getStaffDashboard } from '../controllers/staff-dashboard.controller.js';
+// DASH-01: 직원만 대시보드에 접근한다.
+export const staffDashboardRouter = Router();
+staffDashboardRouter.get(
+  '/dashboards/staff',
+  requireAccount,
+  requireRole('STAFF'),
+  getStaffDashboard,
+);

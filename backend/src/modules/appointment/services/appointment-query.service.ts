@@ -5,20 +5,12 @@ import { AppError } from '../../../common/errors/index.js';
 import { paginationMeta } from '../../../common/utils/pagination.js';
 import { getPrismaClient } from '../../../config/prisma.js';
 import { accountSummarySelect, toAccountSummary } from '../../account/services/account-summary.js';
-export type AppointmentDisplayStatus =
-  'BOOKED' | 'CANCELLED' | 'REGISTERED' | 'CALLED' | 'IN_PROGRESS' | 'COMPLETED';
-// 취소 > 진료 > 호출/접수 > 예약 순으로 화면 상태를 합성한다.
-export function appointmentDisplayStatus(
-  status: 'BOOKED' | 'CANCELLED',
-  reception: {
-    status: 'REGISTERED' | 'CALLED';
-    visit: { status: 'IN_PROGRESS' | 'COMPLETED' } | null;
-  } | null,
-): AppointmentDisplayStatus {
-  if (status === 'CANCELLED') return 'CANCELLED';
-  if (!reception) return 'BOOKED';
-  return reception.visit?.status ?? reception.status;
-}
+import {
+  appointmentDisplayStatus,
+  type AppointmentDisplayStatus,
+} from '../../../common/utils/display-status.js';
+export { appointmentDisplayStatus } from '../../../common/utils/display-status.js';
+export type { AppointmentDisplayStatus } from '../../../common/utils/display-status.js';
 export const appointmentSelect = {
   id: true,
   startsAt: true,
