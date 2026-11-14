@@ -238,11 +238,22 @@ describe('간호기록 작성·정정', () => {
       expect(
         (await request(app).post(`/receptions/${entry.id}/nursing-records`).send({})).status,
       ).toBe(400);
+      expect(
+        (await request(app).post(`/receptions/${entry.id}/nursing-records`).send({ content: '  ' }))
+          .status,
+      ).toBe(400);
       const result = await request(app)
         .post(`/receptions/${entry.id}/nursing-records`)
         .send({ content: '기록' });
       expect(result.status).toBe(201);
       const rec = result.body.data.id;
+      expect(
+        (
+          await request(app)
+            .post(`/nursing-records/${rec}/versions`)
+            .send({ content: '  ', baseVersionNo: 1, correctionReason: '보완' })
+        ).status,
+      ).toBe(400);
       expect(
         (
           await request(app)

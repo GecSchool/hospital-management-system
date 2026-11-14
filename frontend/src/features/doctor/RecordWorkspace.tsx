@@ -45,7 +45,7 @@ export function ClinicalRecordPanel({
           <button
             className="clinical-link"
             type="button"
-            key={v.id}
+            key={v.versionNo}
             aria-pressed={
               (selected ?? record.latestVersion.versionNo) === v.versionNo
             }

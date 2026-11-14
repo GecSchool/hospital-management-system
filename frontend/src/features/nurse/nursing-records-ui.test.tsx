@@ -175,23 +175,33 @@ it('keeps the correction draft on VERSION_CONFLICT and requires explicit latest 
     correctionReason: '내 사유 유지',
   });
 });
-it('makes another author read-only and blocks direct correction routes', async () => {
+it('allows another nurse in the same department to open and save a correction', async () => {
   const { s, n, r } = await fixture();
-  const a = await n.create(r.id, { content: '[가상] 다른 작성자' });
+  const original = await n.create(r.id, { content: '[가상] 다른 작성자' });
   const account = { ...mockAccounts.NURSE, id: 'second-nurse' };
-  await start(s, `/nurse/records/${a.id}`, account);
+  await start(s, `/nurse/records/${original.id}`, account);
   await screen.findByRole('navigation', { name: '기록 버전' });
-  expect(screen.queryByRole('link', { name: '정정 기록 추가 ›' })).toBeNull();
+  fireEvent.click(screen.getByRole('link', { name: '정정 기록 추가 ›' }));
+  await screen.findByRole('heading', { name: '간호 기록 정정' });
+  input('기록 내용', '[가상] 수정');
+  input('정정 사유', '내용 보완');
+  fireEvent.click(screen.getByRole('button', { name: '정정 기록 저장' }));
+  await screen.findByText('정정 기록이 저장되었습니다.');
+  const detail = await n.detail(original.id);
+  expect(detail.versions.map((v) => v.author.id)).toEqual([
+    mockAccounts.NURSE.id,
+    account.id,
+  ]);
 });
-it('blocks direct correction even for another nurse in the same department', async () => {
+it('opens a direct correction route for another nurse in the same department', async () => {
   const { s, n, r } = await fixture();
-  const a = await n.create(r.id, { content: '[가상] 다른 작성자' });
-  await start(s, `/nurse/records/${a.id}/correct`, {
+  const original = await n.create(r.id, { content: '[가상] 원본' });
+  await start(s, `/nurse/records/${original.id}/correct`, {
     ...mockAccounts.NURSE,
     id: 'second-nurse',
   });
-  await screen.findByText('최초 작성자만 정정할 수 있습니다.');
-  expect(screen.queryByLabelText('기록 내용')).toBeNull();
+  expect(await screen.findByRole('heading', { name: '간호 기록 정정' })).toBeTruthy();
+  expect(screen.getByLabelText('기록 내용')).toBeTruthy();
 });
 it('distinguishes patient history/current reception and writes a new record to the selected reception', async () => {
   const { s, n, r } = await fixture();

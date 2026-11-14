@@ -9,8 +9,8 @@ function object(value: unknown): Record<string, unknown> {
 // NUR-02: 접수에 기록할 내용의 형식을 확인한다.
 export function parseNursingCreate(body: unknown): NursingCreate {
   const value = object(body);
-  if (typeof value.content !== 'string')
-    throw new AppError(400, 'VALIDATION_ERROR', '기록 내용은 문자열이어야 합니다.');
+  if (typeof value.content !== 'string' || !value.content.trim())
+    throw new AppError(400, 'VALIDATION_ERROR', '기록 내용을 입력해 주세요.');
   return { content: value.content };
 }
 // NUR-05: 정정 내용·사유와 최신 버전을 확인하기 위한 기준 버전 번호를 검증한다.

@@ -99,21 +99,27 @@ it.each([
   ).rejects.toMatchObject({ code: 'VALIDATION_ERROR' });
   expect((await n.detail(a.id)).versions).toHaveLength(1);
 });
-it('allows another nurse to read but only the original author can correct', async () => {
+it('allows a nurse in the same department to correct while preserving authors', async () => {
   const { s, n, r } = await setup();
-  const a = await n.create(r.id, { content: '[가상] 원본' });
-  const other = s.nursing(async () => ({
-    ...mockAccounts.NURSE,
-    id: 'demo-second-nurse',
-  }));
-  expect((await other.detail(a.id)).id).toBe(a.id);
-  await expect(
-    other.correct(a.id, {
-      baseVersionNo: 1,
-      content: '다른 작성자',
-      correctionReason: '사유',
-    }),
-  ).rejects.toMatchObject({ status: 403 });
+  const original = await n.create(r.id, { content: '[가상] 원본' });
+  const second = { ...mockAccounts.NURSE, id: 'demo-second-nurse' };
+  const other = s.nursing(async () => second);
+  const correction = await other.correct(original.id, {
+    baseVersionNo: 1,
+    content: '[가상] 정정',
+    correctionReason: '사유',
+  });
+  expect(correction).toMatchObject({
+    recordId: original.id,
+    versionNo: 2,
+    author: { id: second.id },
+  });
+  expect(correction).not.toHaveProperty('id');
+  const detail = await n.detail(original.id);
+  expect(detail.versions[0].author.id).toBe(mockAccounts.NURSE.id);
+  expect(detail.versions[1].author.id).toBe(second.id);
+  expect(detail.versions[0]).not.toHaveProperty('id');
+  expect((await n.list(r.id)).data[0].author.id).toBe(mockAccounts.NURSE.id);
 });
 it('rejects stale and concurrent base versions without overwriting the winning version', async () => {
   const { n, r } = await setup();
@@ -215,6 +221,53 @@ it('allows the assigned doctor read interfaces only', async () => {
       .detail(a.id),
   ).rejects.toMatchObject({ status: 403 });
 });
+it('allows a doctor linked to a patient to read notes from another doctor reception', async () => {
+  const { s, n, r } = await setup();
+  const note = await n.create(r.id, { content: '[가상] 다른 의사 진료' });
+  await s.intake.create({
+    patientId: r.patient.id,
+    doctorId: 'demo-doctor',
+    departmentId: 'demo-internal',
+  });
+  const doctor = s.nursing(async () => mockAccounts.DOCTOR);
+  expect((await doctor.list(r.id)).data[0].id).toBe(note.id);
+  expect((await doctor.detail(note.id)).id).toBe(note.id);
+  expect((await doctor.version(note.id, 1)).content).toBe(
+    '[가상] 다른 의사 진료',
+  );
+});
+it('returns not found for a patient and reception mismatch', async () => {
+  const { n, r } = await setup();
+  await expect(n.history('different-patient', r.id)).rejects.toMatchObject({
+    status: 404,
+    code: 'NOT_FOUND',
+  });
+});
+it('allows an active appointment to grant access but not a cancelled appointment', async () => {
+  const s = createMockStaffService({ latencyMs: 0 });
+  const patient = await s.create({
+    name: '가상기록환자',
+    residentNumber: '900101-0000000',
+    phone: '010-0000-1010',
+  });
+  const r = await s.intake.create({
+    patientId: patient.id,
+    doctorId: 'demo-doctor-3',
+    departmentId: 'demo-internal',
+  });
+  const n = s.nursing(async () => mockAccounts.NURSE);
+  const note = await n.create(r.id, { content: '[가상] 간호 기록' });
+  const appointment = await s.booking.create({
+    patientId: r.patient.id,
+    doctorId: 'demo-doctor',
+    departmentId: 'demo-internal',
+    startsAt: '2099-01-05T09:00:00+09:00',
+  });
+  const doctor = s.nursing(async () => mockAccounts.DOCTOR);
+  expect((await doctor.detail(note.id)).id).toBe(note.id);
+  await s.booking.cancel(appointment.id);
+  await expect(doctor.detail(note.id)).rejects.toMatchObject({ status: 403 });
+});
 it('includes earlier and later receptions, excludes foreign departments, and prepends older cursor pages', async () => {
   const { s, n, r } = await setup();
   vi.setSystemTime(new Date('2026-11-08T03:00:00Z'));
@@ -257,7 +310,7 @@ it('includes earlier and later receptions, excludes foreign departments, and pre
   expect(older.meta.hasMore).toBe(false);
   expect((await n.list(r.id)).data.map((r) => r.id)).toEqual([middle.id]);
   await expect(n.history('wrong-patient', r.id)).rejects.toMatchObject({
-    status: 400,
+    status: 404,
   });
   await expect(
     n.history(r.patient.id, r.id, { before: 'bad' }),

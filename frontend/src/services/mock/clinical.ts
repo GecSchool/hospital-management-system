@@ -45,7 +45,6 @@ export function createMockClinical(source: {
       const createdAt = v.completedAt ?? v.startedAt;
       const a = author(mockAccounts.DOCTOR);
       const version: ClinicalVersion = {
-        id: `${id}-v1`,
         recordId: id,
         versionNo: 1,
         symptoms: '',
@@ -60,7 +59,7 @@ export function createMockClinical(source: {
         id,
         visitId: v.id,
         latestVersion: version,
-        versions: [{ id: version.id, versionNo: 1, author: a, createdAt }],
+        versions: [{ versionNo: 1, author: a, createdAt }],
       });
       source.finish({ ...v, completedAt: createdAt, clinicalRecordId: id });
     }
@@ -147,7 +146,6 @@ export function createMockClinical(source: {
             409,
           );
         const v: ClinicalVersion = {
-          id: `${id}-v${input.baseVersionNo + 1}`,
           recordId: id,
           versionNo: input.baseVersionNo + 1,
           symptoms: input.symptoms,
@@ -164,7 +162,6 @@ export function createMockClinical(source: {
           versions: [
             ...r.versions,
             {
-              id: v.id,
               versionNo: v.versionNo,
               author: v.author,
               createdAt: v.createdAt,
@@ -352,7 +349,6 @@ export function createMockClinical(source: {
         const recordId = `demo-clinical-${++sequence}`;
         const createdAt = stamp();
         const version: ClinicalVersion = {
-          id: `${recordId}-v1`,
           recordId,
           versionNo: 1,
           symptoms: input.symptoms,
@@ -366,9 +362,7 @@ export function createMockClinical(source: {
           id: recordId,
           visitId: id,
           latestVersion: version,
-          versions: [
-            { id: version.id, versionNo: 1, author: version.author, createdAt },
-          ],
+          versions: [{ versionNo: 1, author: version.author, createdAt }],
         };
         const completed = {
           ...v,
