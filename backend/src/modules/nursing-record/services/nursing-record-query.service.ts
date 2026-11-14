@@ -26,13 +26,6 @@ export function toNursingVersion(v: Version) {
     createdAt: v.createdAt.toISOString(),
   };
 }
-export const nursingRecordSelect = {
-  id: true,
-  receptionId: true,
-  reception: { select: { receivedAt: true } },
-  originalAuthor: { select: { account: { select: accountSummarySelect } } },
-  versions: { orderBy: { versionNo: 'asc' }, select: nursingVersionSelect },
-} satisfies Prisma.NursingRecordSelect;
 async function requireReceptionAccess(actor: AccountContext, receptionId: string) {
   if (actor.role !== 'DOCTOR' && actor.role !== 'NURSE')
     throw new AppError(403, 'FORBIDDEN', '접근 권한이 없습니다.');
@@ -97,21 +90,32 @@ async function requireRecordAccess(actor: AccountContext, recordId: string) {
   await requireReceptionAccess(actor, record.receptionId);
   return record;
 }
-// NUR-03: 권한이 있는 사용자에게 최신 버전과 원본부터의 버전 이력 요약을 제공한다.
+// NUR-03: 접근 권한을 확인한 뒤 전체 버전의 요약만 읽고, 그 목록의 마지막 버전 본문만 조회한다.
+// 과거 본문은 읽지 않으며, 조회 중 새 정정이 생겨도 응답 본문과 버전 목록은 같은 기준을 유지한다.
 export async function getNursingRecord(actor: AccountContext, recordId: string) {
-  await requireRecordAccess(actor, recordId);
-  const record = await getPrismaClient().nursingRecord.findUnique({
-    where: { id: recordId },
-    select: nursingRecordSelect,
+  const record = await requireRecordAccess(actor, recordId);
+  const db = getPrismaClient();
+  const versions = await db.nursingRecordVersion.findMany({
+    where: { recordId },
+    orderBy: { versionNo: 'asc' },
+    select: {
+      versionNo: true,
+      createdAt: true,
+      author: { select: { account: { select: accountSummarySelect } } },
+    },
   });
-  if (!record) throw new AppError(404, 'NOT_FOUND', '간호 기록을 찾을 수 없습니다.');
-  const latest = record.versions.at(-1);
+  const latestNumber = versions.at(-1)?.versionNo;
+  if (latestNumber === undefined) throw new AppError(409, 'CONFLICT', '간호 기록 버전이 없습니다.');
+  const latest = await db.nursingRecordVersion.findUnique({
+    where: { recordId_versionNo: { recordId, versionNo: latestNumber } },
+    select: nursingVersionSelect,
+  });
   if (!latest) throw new AppError(409, 'CONFLICT', '간호 기록 버전이 없습니다.');
   return {
     id: record.id,
     receptionId: record.receptionId,
     latestVersion: toNursingVersion(latest),
-    versions: record.versions.map((v) => ({
+    versions: versions.map((v) => ({
       versionNo: v.versionNo,
       author: toAccountSummary(v.author.account),
       createdAt: v.createdAt.toISOString(),
