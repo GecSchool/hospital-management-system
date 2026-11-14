@@ -30,7 +30,6 @@ export function createScheduleState(source: {
 }) {
   const times = new Map<string, WeeklySlot[]>();
   const leaves = new Map<string, Leave[]>();
-  let seq = 0;
   const defaults = () =>
     [1, 2, 3, 4, 5].flatMap((dayOfWeek) => [
       { dayOfWeek, startTime: '09:00', endTime: '12:00' },
@@ -165,7 +164,7 @@ export function createScheduleState(source: {
               '이미 휴진으로 등록된 날짜입니다.',
               409,
             );
-          const l = { id: `demo-leave-${++seq}`, date };
+          const l = { date };
           leaves.set(u.doctorId!, [...off(u.doctorId!), l]);
           return structuredClone(l);
         },

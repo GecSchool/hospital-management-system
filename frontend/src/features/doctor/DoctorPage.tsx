@@ -438,7 +438,7 @@ function Session({ source }: { source: StaffService }) {
             <details className="doctor-leave-list">
               <summary>휴진 목록</summary>
               {schedule.data.leaves.map((l) => (
-                <p key={l.id}>{l.date} · 휴진</p>
+                <p key={l.date}>{l.date} · 휴진</p>
               ))}
               {!schedule.data.leaves.length && <p>등록된 휴진이 없습니다.</p>}
             </details>
