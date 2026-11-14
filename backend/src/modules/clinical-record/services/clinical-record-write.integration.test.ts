@@ -206,6 +206,9 @@ describe('진료 완료 및 기록 정정', () => {
       const completed = await request(app).post(`/visits/${visit.id}/complete`).send(input);
       expect(completed.status).toBe(200);
       const recordId = completed.body.data.record.id;
+      expect(completed.body.data.record).toEqual({ id: recordId, visitId: visit.id });
+      expect(completed.body.data.visit.clinicalRecordId).toBe(recordId);
+      expect(completed.body.data.version.recordId).toBe(recordId);
       expect(
         (
           await request(app)
