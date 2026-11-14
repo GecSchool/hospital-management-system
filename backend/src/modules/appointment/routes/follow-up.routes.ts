@@ -1,2 +1,10 @@
-// 예정: APT-06 재진 예약. 미구현이며 라우터에 등록하지 않았습니다.
-export {};
+import { Router } from 'express';
+import { requireAccount, requireRole } from '../../../common/middlewares/auth.js';
+import * as controller from '../controllers/follow-up.controller.js';
+export const followUpRouter = Router();
+followUpRouter.post(
+  '/visits/:visitId/follow-up-appointments',
+  requireAccount,
+  requireRole('DOCTOR'),
+  controller.create,
+);
