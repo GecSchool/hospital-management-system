@@ -1,2 +1,10 @@
-// 예정: DASH-02 의사 일정. 미구현이며 라우터에 등록하지 않았습니다.
-export {};
+import type { RequestHandler } from 'express';
+import type { AccountContext } from '../../../common/middlewares/auth.js';
+import { sendData } from '../../../common/responses/index.js';
+import { parseDoctorScheduleQuery } from '../validations/doctor-schedule.validation.js';
+import { getDoctorSchedule } from '../services/doctor-schedule.service.js';
+/** DASH-02: 유효한 날짜와 인증된 의사를 사용해 일정 응답을 반환한다. */
+export const get: RequestHandler = async (req, res) => {
+  const { from, to } = parseDoctorScheduleQuery(req.query);
+  sendData(res, await getDoctorSchedule(res.locals.account as AccountContext, from, to));
+};

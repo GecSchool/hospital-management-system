@@ -4,7 +4,12 @@ import type { parseReceptionQuery } from '../validations/reception-query.validat
 import { AppError } from '../../../common/errors/index.js';
 import { paginationMeta } from '../../../common/utils/pagination.js';
 import { getPrismaClient } from '../../../config/prisma.js';
-export type ReceptionDisplayStatus = 'REGISTERED' | 'CALLED' | 'IN_PROGRESS' | 'COMPLETED';
+import {
+  receptionDisplayStatus,
+  type ReceptionDisplayStatus,
+} from '../../../common/utils/display-status.js';
+export { receptionDisplayStatus } from '../../../common/utils/display-status.js';
+export type { ReceptionDisplayStatus } from '../../../common/utils/display-status.js';
 export const receptionSelect = {
   id: true,
   appointmentId: true,
@@ -22,13 +27,6 @@ export const receptionSelect = {
   visit: { select: { id: true, status: true } },
 } satisfies Prisma.ReceptionSelect;
 type Row = Prisma.ReceptionGetPayload<{ select: typeof receptionSelect }>;
-// 접수의 진료·호출 상태를 합성하고 역할에 따라 환자번호를 제공한다.
-export function receptionDisplayStatus(
-  status: 'REGISTERED' | 'CALLED',
-  visit: { status: 'IN_PROGRESS' | 'COMPLETED' } | null,
-): ReceptionDisplayStatus {
-  return visit?.status ?? status;
-}
 export function toReception(row: Row, role: Role) {
   const { patient, doctor } = row;
   return {

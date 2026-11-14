@@ -234,8 +234,8 @@
 
 | ID | 메서드 · 경로 | 권한 | 요청 / 성공 | 주요 실패·규칙 |
 |---|---|---|---|---|
-| DASH-01 | `GET /dashboards/staff` | STAFF | query `date?` 기본 오늘 → `{date,receptionPreview: Reception[],appointmentPreview: Appointment[]}` | 접수 행은 접수 시각·환자·진료과·의사·예약/현장 구분(`appointmentId` 유무)·상태, 예약 행은 예약 시각·환자·진료과·의사·상태 및 각 ID를 제공. 접수는 최근 접수 순. 제한된 미리보기이며 전체 보기는 목록 API로 이동. |
-| DASH-02 | `GET /doctors/me/schedule` | DOCTOR | `from`, `to` → `{from,to,availability,leaves,appointments,receptions,visits}` | `availability:[{dayOfWeek,startTime,endTime}]`, `leaves:[{date}]`, `appointments:Appointment[]`, `receptions:Reception[]`, `visits:Visit[]`. 연결 ID와 각 시각·상태로 시간표와 날짜별 목록 구성. 예약 목록과 내원 목록에는 연결된 동일 환자가 각각 표시될 수 있으나 시간표에서는 연결된 예약·접수를 한 항목으로 합성. 한 의사 동일 시간 유효 예약 한 건; 현장 접수는 별도. 페이지 번호 없음. |
+| DASH-01 | `GET /dashboards/staff` | STAFF | query `date?` 기본 오늘 → `{date,receptionPreview: Reception[],appointmentPreview: Appointment[]}` | 접수 행은 접수 시각·환자·진료과·의사·예약/현장 구분(`appointmentId` 유무)·상태, 예약 행은 예약 시각·환자·진료과·의사·상태 및 각 ID를 제공. 접수는 최근 접수 순 최대 4건, 예약은 예약 시각 순 최대 3건을 표시하며 취소된 예약은 미리보기에서 제외한다. 전체 보기는 목록 API로 이동하며 취소 예약도 조회할 수 있다. |
+| DASH-02 | `GET /doctors/me/schedule` | DOCTOR | `from`, `to` → `{from,to,availability,leaves,appointments,receptions,visits}` | `availability:[{dayOfWeek,startTime,endTime}]`, `leaves:[{date}]`, `appointments:Appointment[]`, `receptions:Reception[]`, `visits:Visit[]`. 예약은 예약일시, 접수는 접수일시, 진료는 진료 시작일시를 조회 범위 기준으로 한다. 진료에 연결된 접수가 범위 밖이어도 진료를 반환한다. 연결 ID와 각 시각·상태로 시간표와 날짜별 목록 구성. 예약 목록과 내원 목록에는 연결된 동일 환자가 각각 표시될 수 있으나 시간표에서는 연결된 예약·접수를 한 항목으로 합성. 한 의사 동일 시간 유효 예약 한 건; 현장 접수는 별도. 페이지 번호 없음. |
 | DASH-03 | `GET /dashboards/admin` | ADMIN | → `{accountsByRole,departmentsByStatus}` | 역할별 수는 `ACTIVE` 계정만 집계. 미가입 초대·비활성 계정 제외. 진료과 수는 활성·비활성 별도 집계. |
 
 ## 10. 화면 흐름과 API 연결
