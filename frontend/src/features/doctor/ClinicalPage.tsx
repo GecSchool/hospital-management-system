@@ -559,7 +559,7 @@ function NursingDetail({
               <button
                 className="clinical-link"
                 type="button"
-                key={s.id}
+                key={s.versionNo}
                 aria-pressed={
                   (n ?? detail.data.latestVersion.versionNo) === s.versionNo
                 }

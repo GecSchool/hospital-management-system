@@ -5,7 +5,6 @@ import type { NurseAppointment } from '../nurse/bookingService';
 import type { NurseReception, Visit } from '../nurse/service';
 export type WeeklySlot = Availability['weeklySlots'][number];
 export interface Leave {
-  id: string;
   date: string;
 }
 export interface DoctorSchedule {

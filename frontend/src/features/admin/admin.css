@@ -81,26 +81,28 @@
   overflow-x: auto;
 }
 .admin-workspace .admin-table .ui-table {
-  width: 1016px;
+  width: 100%;
+  min-width: 640px;
+  max-width: 1016px;
   table-layout: fixed;
 }
 .admin-workspace .admin-table th:nth-child(1) {
-  width: 164px;
+  width: 16%;
 }
 .admin-workspace .admin-table th:nth-child(2) {
-  width: 316px;
+  width: 31%;
 }
 .admin-workspace .admin-table th:nth-child(3) {
-  width: 130px;
+  width: 13%;
 }
 .admin-workspace .admin-table th:nth-child(4) {
-  width: 120px;
+  width: 12%;
 }
 .admin-workspace .admin-table th:nth-child(5) {
-  width: 120px;
+  width: 12%;
 }
 .admin-workspace .admin-table th:nth-child(6) {
-  width: 166px;
+  width: 16%;
 }
 .admin-workspace .admin-table td {
   overflow-wrap: anywhere;

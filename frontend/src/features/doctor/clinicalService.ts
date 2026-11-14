@@ -24,7 +24,6 @@ export interface ClinicalInput {
   opinion: string;
 }
 export interface ClinicalVersion extends ClinicalInput {
-  id: string;
   recordId: string;
   versionNo: number;
   correctionReason: string | null;

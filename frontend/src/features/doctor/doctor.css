@@ -109,7 +109,7 @@
 .doctor-scope .doctor-editor .doctor-grid {
   border-spacing: 3px 2px;
   max-width: 980px;
-  min-width: 760px;
+  min-width: 640px;
 }
 .doctor-scope .doctor-editor caption {
   position: absolute;
@@ -260,6 +260,9 @@
   margin-top: 24px;
   padding-top: 12px;
   border-top: var(--border-default);
+}
+.doctor-scope .doctor-week .doctor-grid {
+  min-width: 640px;
 }
 .doctor-scope .doctor-week caption {
   position: absolute;

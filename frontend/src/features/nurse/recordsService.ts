@@ -3,7 +3,6 @@ import type { ApiResponse } from '../../types/api';
 import type { StaffAppointment } from '../staff/types';
 export type RecordAuthor = StaffAppointment['registeredBy'];
 export interface VersionSummary {
-  id: string;
   versionNo: number;
   author: RecordAuthor;
   createdAt: string;

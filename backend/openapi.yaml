@@ -4079,7 +4079,7 @@ paths:
 
         **원본 계약:** `{content}` → `201 NursingRecord`
 
-        **업무 규칙:** 접수 후 진료 전·진료 중·완료 후 작성 가능. 작성자·기록 시각 서버 결정; 원본 버전 1 생성. 삭제된 접수에는 기록할 수 없다.
+        **업무 규칙:** 접수 후 진료 전·진료 중·완료 후 작성 가능. 내용은 공백을 제외한 문자가 1자 이상이어야 한다. 작성자·기록 시각 서버 결정; 원본 버전 1 생성. 삭제된 접수에는 기록할 수 없다.
       parameters:
         - name: receptionId
           in: path
@@ -4141,7 +4141,10 @@ paths:
             schema:
               type: object
               properties:
-                content: *a1
+                content:
+                  type: string
+                  pattern: '\S'
+                  description: 공백을 제외한 문자가 1자 이상이어야 한다.
               required:
                 - content
   /nursing-records/{recordId}:
@@ -4299,7 +4302,7 @@ paths:
 
         **원본 계약:** `{baseVersionNo,content,correctionReason}` → `201 NursingRecordVersion`
 
-        **업무 규칙:** 같은 진료과의 다른 간호사도 정정 가능. 최초 작성자는 변경하지 않고 새 버전 작성자는 로그인한 간호사로 기록한다. 사유 필수, 최신 버전 충돌 `409 VERSION_CONFLICT`. 기존 버전 보존.
+        **업무 규칙:** 같은 진료과의 다른 간호사도 정정 가능. 최초 작성자는 변경하지 않고 새 버전 작성자는 로그인한 간호사로 기록한다. 내용과 사유는 각각 공백을 제외한 문자가 1자 이상이어야 한다. 최신 버전 충돌 `409 VERSION_CONFLICT`. 기존 버전 보존.
       parameters:
         - name: recordId
           in: path
@@ -4370,8 +4373,14 @@ paths:
                 baseVersionNo:
                   type: integer
                   minimum: 1
-                content: *a1
-                correctionReason: *a1
+                content:
+                  type: string
+                  pattern: '\S'
+                  description: 공백을 제외한 문자가 1자 이상이어야 한다.
+                correctionReason:
+                  type: string
+                  pattern: '\S'
+                  description: 공백을 제외한 문자가 1자 이상이어야 한다.
               required:
                 - baseVersionNo
                 - content

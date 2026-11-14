@@ -114,6 +114,7 @@ it('preserves future booking and original availability on conflict including emp
 it('applies full-day leave to staff/nurse slots and rejects duplicate without adding extra leaves', async () => {
   const { s, d } = setup();
   const l = await d.leave(date);
+  expect(l).toEqual({ date });
   expect((await d.leaves(own.doctorId, date, date))[0]).toEqual(l);
   expect((await d.schedule(date, date)).leaves).toEqual([l]);
   for (const b of [

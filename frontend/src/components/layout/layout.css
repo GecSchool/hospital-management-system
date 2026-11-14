@@ -38,6 +38,12 @@
   background: var(--color-bg-surface);
 }
 
+@media (min-width: 901px) and (max-width: 1024px) {
+  .app-layout {
+    min-width: 0;
+  }
+}
+
 .app-sidebar {
   background: var(--color-bg-surface);
 }

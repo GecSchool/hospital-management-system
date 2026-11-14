@@ -61,18 +61,18 @@ export const apiStaffService: StaffService = {
   },
   async appointments(id, page, signal) {
     return (
-      await apiClient.get<PageResult<StaffAppointment>>(
-        `${patientPath(id)}/appointments`,
-        { params: page, signal },
-      )
+      await apiClient.get<PageResult<StaffAppointment>>('/appointments', {
+        params: { patientId: id, ...page },
+        signal,
+      })
     ).data;
   },
   async receptions(id, page, signal) {
     return (
-      await apiClient.get<PageResult<StaffReception>>(
-        `${patientPath(id)}/receptions`,
-        { params: page, signal },
-      )
+      await apiClient.get<PageResult<StaffReception>>('/receptions', {
+        params: { patientId: id, ...page },
+        signal,
+      })
     ).data;
   },
   async visits(id, page, signal) {

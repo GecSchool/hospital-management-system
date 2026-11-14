@@ -65,6 +65,7 @@ it('appends versions with fixed identity/metadata and preserves original after r
   const { c, result, v } = await setup();
   const id = result!.version.recordId;
   const original = await c.version(id, 1);
+  expect(original).not.toHaveProperty('id');
   vi.setSystemTime(new Date('2026-11-09T03:01:00Z'));
   const v2 = await c.correct(id, {
     baseVersionNo: 1,
@@ -85,6 +86,7 @@ it('appends versions with fixed identity/metadata and preserves original after r
   expect((await c.record(id)).versions.map((v) => v.versionNo)).toEqual([
     1, 2, 3,
   ]);
+  expect((await c.record(id)).versions[0]).not.toHaveProperty('id');
   expect((await c.visit(v.id)).completedAt).toBe(result!.visit.completedAt);
   expect((await c.version(id, 2)).correctionReason).toBe('관찰 보완');
 });

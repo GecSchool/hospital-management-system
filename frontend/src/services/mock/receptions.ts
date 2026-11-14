@@ -504,6 +504,19 @@ export function createMockReceptions(source: {
     clinical,
     nursing: createMockNursingRecords({
       reception: (id) => project(get(id)),
+      doctorCanAccess: (patientId, doctorId) =>
+        records.some(
+          ({ row, deleted }) =>
+            !deleted &&
+            row.patient.id === patientId &&
+            row.doctor.id === doctorId,
+        ) ||
+        source.appointments.some(
+          (a) =>
+            a.patient.id === patientId &&
+            a.doctor.id === doctorId &&
+            a.status === 'BOOKED',
+        ),
       markNursing: (id) => {
         get(id).nursing = true;
       },

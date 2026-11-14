@@ -224,10 +224,10 @@
 | ID | 메서드 · 경로 | 권한 | 요청 / 성공 | 주요 실패·규칙 |
 |---|---|---|---|---|
 | NUR-01 | `GET /receptions/{receptionId}/nursing-records` | NURSE(본인 과), DOCTOR(본인 예약·접수 환자) | `limit?`, `before?` → `NursingRecord[]` | 해당 접수의 기록 조회. 간호사의 다른 날짜 이력은 NUR-06 사용. 의사는 해당 진료에 연결된 접수 기준 조회. |
-| NUR-02 | `POST /receptions/{receptionId}/nursing-records` | NURSE(본인 과) | `{content}` → `201 NursingRecord` | 접수 후 진료 전·진료 중·완료 후 작성 가능. 작성자·기록 시각 서버 결정; 원본 버전 1 생성. 삭제된 접수에는 기록할 수 없다. |
+| NUR-02 | `POST /receptions/{receptionId}/nursing-records` | NURSE(본인 과) | `{content}` → `201 NursingRecord` | 접수 후 진료 전·진료 중·완료 후 작성 가능. 내용은 공백을 제외한 문자가 1자 이상이어야 한다. 작성자·기록 시각 서버 결정; 원본 버전 1 생성. 삭제된 접수에는 기록할 수 없다. |
 | NUR-03 | `GET /nursing-records/{recordId}` | NURSE(본인 과), DOCTOR(본인 예약·접수 환자) | → `{id,receptionId,latestVersion,versions:[{versionNo,author,createdAt}]}` | 기록 본문 및 버전 이력 조회. 관리자·직원은 본문 열람 불가. |
 | NUR-04 | `GET /nursing-records/{recordId}/versions/{versionNo}` | NURSE(본인 과), DOCTOR(본인 예약·접수 환자) | → `NursingRecordVersion` | 원본·선택 정정의 본문과 사유. 관리자·직원은 열람 불가. |
-| NUR-05 | `POST /nursing-records/{recordId}/versions` | NURSE(기록이 연결된 접수의 진료과와 현재 소속이 일치) | `{baseVersionNo,content,correctionReason}` → `201 NursingRecordVersion` | 같은 진료과의 다른 간호사도 정정 가능. 최초 작성자는 변경하지 않고 새 버전 작성자는 로그인한 간호사로 기록한다. 사유 필수, 최신 버전 충돌 `409 VERSION_CONFLICT`. 기존 버전 보존. |
+| NUR-05 | `POST /nursing-records/{recordId}/versions` | NURSE(기록이 연결된 접수의 진료과와 현재 소속이 일치) | `{baseVersionNo,content,correctionReason}` → `201 NursingRecordVersion` | 같은 진료과의 다른 간호사도 정정 가능. 최초 작성자는 변경하지 않고 새 버전 작성자는 로그인한 간호사로 기록한다. 내용과 사유는 각각 공백을 제외한 문자가 1자 이상이어야 한다. 최신 버전 충돌 `409 VERSION_CONFLICT`. 기존 버전 보존. |
 | NUR-06 | `GET /patients/{patientId}/nursing-records` | NURSE(본인 과) | `receptionId`, `limit?`, `before?` → `NursingRecord[]`, `meta:{nextBefore,hasMore}` | 지정한 접수와 환자·본인 진료과를 검사. 같은 환자의 같은 진료과의 다른 날짜 접수 이력을 선택 접수보다 이전·이후 모두 포함하며 다른 진료과는 제외. 기록별 `receptionId`, `receivedAt`, 최신 버전·작성자·작성 시각 반환. 이력은 과거→현재; `receptionId`로 현재 접수 기록을 구분하며 새 기록은 선택 접수에 NUR-02로 저장. |
 
 ## 9. 대시보드 및 일정

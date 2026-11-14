@@ -2,7 +2,7 @@ import { StaffContext } from '../staff/StaffContext';
 import type { NurseBooking } from '../nurse/bookingService';
 import type { StaffService } from '../staff/staffService';
 import { useContext, useId, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { Button, Input, Select, Modal, Pagination } from '../../components/ui';
 import { ErrorState, Loading } from '../../components/common';
@@ -59,6 +59,7 @@ export function AppointmentForm({
   const home = nurse ? '/nurse' : '/staff';
   const { user } = useAuth();
   const location = useLocation();
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const scope = useId();
   const write = useBookingWrite();
@@ -68,14 +69,22 @@ export function AppointmentForm({
     | StaffPatientSummary
     | import('../nurse/bookingService').NursePatient
     | undefined
-  >(appointment?.patient);
+  >(
+    () =>
+      appointment?.patient ??
+      (nurse && typeof selectedId === 'string'
+        ? queryClient.getQueryData<
+            import('../nurse/bookingService').NursePatient
+          >(staffKeys.detail(user!.id, selectedId))
+        : undefined),
+  );
   const initial = useQuery({
     queryKey: staffKeys.detail(
       user!.id,
       typeof selectedId === 'string' ? selectedId : '',
     ),
     queryFn: ({ signal }) => service.detail(selectedId as string, signal),
-    enabled: !appointment && typeof selectedId === 'string',
+    enabled: !nurse && !appointment && typeof selectedId === 'string',
   });
   const selected = patient ?? initial.data;
   const [departmentId, setDepartment] = useState(
@@ -205,6 +214,12 @@ export function AppointmentForm({
               message={bookingError(initial.error)}
               onRetry={() => void initial.refetch()}
             />
+          )}
+          {nurse && !selected && (
+            <p role="alert">
+              환자를 다시 선택해 주세요.{' '}
+              <Link to="/nurse/appointments/new">환자 검색</Link>
+            </p>
           )}
           <label>
             진료과

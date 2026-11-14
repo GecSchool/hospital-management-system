@@ -46,13 +46,22 @@ describe('PAT_01~07 and DASH_01 API contracts', () => {
     expect(requests.map((request) => request.url)).toEqual([
       '/patients',
       '/patients/opaque%2Fid',
-      '/patients/opaque%2Fid/appointments',
-      '/patients/opaque%2Fid/receptions',
+      '/appointments',
+      '/receptions',
       '/patients/opaque%2Fid/visits',
       '/dashboards/staff',
     ]);
     expect(requests[0].params).toEqual({ ...filters, page: 2, size: 5 });
-    expect(requests[2].params).toEqual({ page: 2, size: 5 });
+    expect(requests[2].params).toEqual({
+      patientId: 'opaque/id',
+      page: 2,
+      size: 5,
+    });
+    expect(requests[3].params).toEqual({
+      patientId: 'opaque/id',
+      page: 2,
+      size: 5,
+    });
     expect(requests[5].params).toEqual({ date: '2026-11-12' });
     for (const request of requests) {
       expect(request.method).toBe('get');

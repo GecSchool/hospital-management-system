@@ -275,11 +275,9 @@ function RecordSession({ source }: { source: StaffService }) {
                         <Link className="record-link" to={path(r.id)}>
                           기록 보기 ›
                         </Link>
-                        {r.author.id === user!.id && (
-                          <Link className="record-link" to={path(r.id, true)}>
-                            정정 기록 추가 ›
-                          </Link>
-                        )}
+                        <Link className="record-link" to={path(r.id, true)}>
+                          정정 기록 추가 ›
+                        </Link>
                       </div>
                     </article>
                   ))}
@@ -302,28 +300,21 @@ function RecordSession({ source }: { source: StaffService }) {
                 }
               />
             ) : correcting ? (
-              <>
-                {detail.data!.versions.find((v) => v.versionNo === 1)?.author
-                  .id !== user!.id ? (
-                  <p role="alert">최초 작성자만 정정할 수 있습니다.</p>
-                ) : (
-                  <RecordForm
-                    cancelTo={path(recordId)}
-                    detail={detail.data!}
-                    onCorrect={(input) => records.correct(recordId, input)}
-                    reload={async () => {
-                      const latest = await detail.refetch();
-                      if (!latest.data || latest.error) throw latest.error;
-                      return latest.data;
-                    }}
-                    onSaved={() =>
-                      navigate(path(recordId), {
-                        state: { notice: '정정 기록이 저장되었습니다.' },
-                      })
-                    }
-                  />
-                )}
-              </>
+              <RecordForm
+                cancelTo={path(recordId)}
+                detail={detail.data!}
+                onCorrect={(input) => records.correct(recordId, input)}
+                reload={async () => {
+                  const latest = await detail.refetch();
+                  if (!latest.data || latest.error) throw latest.error;
+                  return latest.data;
+                }}
+                onSaved={() =>
+                  navigate(path(recordId), {
+                    state: { notice: '정정 기록이 저장되었습니다.' },
+                  })
+                }
+              />
             ) : (
               <>
                 <h2>간호 기록</h2>
@@ -348,7 +339,7 @@ function RecordSession({ source }: { source: StaffService }) {
                   {detail.data!.versions.map((v) => (
                     <button
                       type="button"
-                      key={v.id}
+                      key={v.versionNo}
                       aria-pressed={
                         (versionNo ?? detail.data!.latestVersion.versionNo) ===
                         v.versionNo
@@ -369,12 +360,9 @@ function RecordSession({ source }: { source: StaffService }) {
                     <p className="record-body">{displayed.correctionReason}</p>
                   </div>
                 )}
-                {detail.data!.versions.find((v) => v.versionNo === 1)?.author
-                  .id === user!.id && (
-                  <Link className="record-link" to={path(recordId, true)}>
-                    정정 기록 추가 ›
-                  </Link>
-                )}
+                <Link className="record-link" to={path(recordId, true)}>
+                  정정 기록 추가 ›
+                </Link>
               </>
             )}
           </div>

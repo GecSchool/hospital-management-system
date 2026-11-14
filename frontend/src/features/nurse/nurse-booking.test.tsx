@@ -122,6 +122,9 @@ it('reuses slot conflicts, errors and patient pagination', async () => {
 });
 it('renders patient selection and shared form, saves once, and reads nurse detail without staff actions', async () => {
   const { s, n } = setup();
+  const nurseBooking = s.nurseBooking.bind(s);
+  const detail = vi.fn().mockRejectedValue(new Error('상세 조회 권한 없음'));
+  s.nurseBooking = (principal) => ({ ...nurseBooking(principal), detail });
   const auth = createMockAuthService({ latencyMs: 0 });
   await auth.login({ identifier: 'nurse', password: '1234' });
   const client = createQueryClient();
@@ -148,6 +151,8 @@ it('renders patient selection and shared form, saves once, and reads nurse detai
       '가상환자003',
     ),
   );
+  expect(detail).not.toHaveBeenCalled();
+  await screen.findByRole('option', { name: '가상의사3' });
   fireEvent.change(screen.getByLabelText('담당 의사'), {
     target: { value: 'demo-doctor-3' },
   });
@@ -186,4 +191,24 @@ it('renders patient selection and shared form, saves once, and reads nurse detai
   expect((await s.booking.detail(rows.data[0].id)).registeredBy.id).toBe(
     mockAccounts.NURSE.id,
   );
+});
+
+it('asks for patient selection when opening a booking URL without a cached selection', async () => {
+  const { s } = setup();
+  const auth = createMockAuthService({ latencyMs: 0 });
+  await auth.login({ identifier: 'nurse', password: '1234' });
+  render(
+    <MemoryRouter initialEntries={['/nurse/appointments/new/demo-patient-3']}>
+      <AppProviders service={auth} client={createQueryClient()}>
+        <AppRoutes staffService={s} />
+      </AppProviders>
+    </MemoryRouter>,
+  );
+  expect((await screen.findByRole('alert')).textContent).toContain(
+    '환자를 다시 선택해 주세요',
+  );
+  fireEvent.click(screen.getByRole('link', { name: '환자 검색' }));
+  expect(
+    await screen.findByRole('table', { name: '예약 환자 선택' }),
+  ).toBeTruthy();
 });

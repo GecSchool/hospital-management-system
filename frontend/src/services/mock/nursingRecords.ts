@@ -12,6 +12,7 @@ import type { StaffReception } from '../../features/staff/types';
  * No patient/reception copies, persistence, or real server transaction guarantee. */
 export function createMockNursingRecords(source: {
   reception(id: string): StaffReception;
+  doctorCanAccess(patientId: string, doctorId: string): boolean;
   markNursing(id: string): void;
   wait(signal?: AbortSignal, saving?: boolean): Promise<void>;
 }) {
@@ -63,7 +64,7 @@ export function createMockNursingRecords(source: {
       if (
         u.role === 'NURSE'
           ? r.department.id !== u.department!.id
-          : r.doctor.id !== u.doctorId
+          : !u.doctorId || !source.doctorCanAccess(r.patient.id, u.doctorId)
       )
         return deny();
       return r;
@@ -122,7 +123,6 @@ export function createMockNursingRecords(source: {
       u: SelfAccount,
     ): NursingRecordVersion {
       return {
-        id: `${id}-v${versionNo}`,
         recordId: id,
         versionNo,
         content,
@@ -167,8 +167,7 @@ export function createMockNursingRecords(source: {
           id,
           receptionId: r.receptionId,
           latestVersion: r.versions.at(-1)!,
-          versions: r.versions.map(({ id, versionNo, author, createdAt }) => ({
-            id,
+          versions: r.versions.map(({ versionNo, author, createdAt }) => ({
             versionNo,
             author,
             createdAt,
@@ -186,7 +185,6 @@ export function createMockNursingRecords(source: {
       async correct(id, input) {
         const u = await ready(undefined, true);
         const r = get(id, u);
-        if (r.versions[0].author.id !== u.id) return deny();
         if (!nonempty(input.content) || !nonempty(input.correctionReason))
           throw new ApiError(
             'VALIDATION_ERROR',
@@ -217,13 +215,14 @@ export function createMockNursingRecords(source: {
       },
       async history(patientId, receptionId, cursor, signal) {
         const u = await ready(signal, false, true); // NUR_06 is NURSE-only.
-        const selected = scoped(receptionId, u);
+        const selected = source.reception(receptionId);
         if (selected.patient.id !== patientId)
           throw new ApiError(
-            'VALIDATION_ERROR',
+            'NOT_FOUND',
             '환자와 접수 정보를 확인해 주세요.',
-            400,
+            404,
           );
+        scoped(receptionId, u);
         const ids = [...records]
           .filter(([, record]) => {
             const r = source.reception(record.receptionId);
