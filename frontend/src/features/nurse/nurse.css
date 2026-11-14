@@ -56,7 +56,7 @@
   width: calc(100% - 88px);
 }
 .nurse-table .ui-table {
-  min-width: 900px;
+  min-width: 640px;
 }
 .nurse-table td:last-child {
   display: flex;
