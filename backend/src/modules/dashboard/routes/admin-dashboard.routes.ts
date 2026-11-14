@@ -1,2 +1,5 @@
-// 예정: DASH-03 관리자 대시보드. 미구현이며 라우터에 등록하지 않았습니다.
-export {};
+import { Router } from 'express';
+import { requireAccount, requireRole } from '../../../common/middlewares/auth.js';
+import * as controller from '../controllers/admin-dashboard.controller.js';
+export const adminDashboardRouter = Router();
+adminDashboardRouter.get('/admin', requireAccount, requireRole('ADMIN'), controller.get);
