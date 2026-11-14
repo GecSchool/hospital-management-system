@@ -102,9 +102,10 @@ export async function listNursingRecords(
 async function requireRecordAccess(actor: AccountContext, recordId: string) {
   if (actor.role !== 'DOCTOR' && actor.role !== 'NURSE')
     throw new AppError(403, 'FORBIDDEN', '접근 권한이 없습니다.');
+  // 권한을 확인하기 전에는 기록 내용이 아닌 식별 정보만 가져온다.
   const record = await getPrismaClient().nursingRecord.findUnique({
     where: { id: recordId },
-    select: nursingRecordSelect,
+    select: { id: true, receptionId: true },
   });
   if (!record) throw new AppError(404, 'NOT_FOUND', '간호 기록을 찾을 수 없습니다.');
   await requireReceptionAccess(actor, record.receptionId);
@@ -112,7 +113,12 @@ async function requireRecordAccess(actor: AccountContext, recordId: string) {
 }
 // NUR-03: 권한이 있는 사용자에게 최신 버전과 원본부터의 버전 이력 요약을 제공한다.
 export async function getNursingRecord(actor: AccountContext, recordId: string) {
-  const record = await requireRecordAccess(actor, recordId);
+  await requireRecordAccess(actor, recordId);
+  const record = await getPrismaClient().nursingRecord.findUnique({
+    where: { id: recordId },
+    select: nursingRecordSelect,
+  });
+  if (!record) throw new AppError(404, 'NOT_FOUND', '간호 기록을 찾을 수 없습니다.');
   const latest = record.versions.at(-1);
   if (!latest) throw new AppError(409, 'CONFLICT', '간호 기록 버전이 없습니다.');
   return {
