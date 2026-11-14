@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { useAuth } from '../auth/useAuth';
 import { staffService } from '../staff/service';
@@ -19,6 +19,8 @@ import { PageHeader } from '../../components/layout';
 import { dateTimeLabel, statusLabels } from '../staff/format';
 import type { AppointmentFilters } from '../appointments/service';
 import type { PatientFilters } from '../staff/types';
+import { staffKeys } from '../staff/queries';
+import { nursePatient } from './bookingService';
 import '../staff/staff.css';
 import './nurse.css';
 export function NurseBookingPage({
@@ -52,6 +54,7 @@ function Session({ source }: { source: StaffService }) {
   const { patientId, appointmentId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const scope = useId();
   const choosing = location.pathname.endsWith('/new');
   const forming = !!patientId;
@@ -259,6 +262,14 @@ function Session({ source }: { source: StaffService }) {
                           : `/nurse/appointments/${encodeURIComponent(r.id)}`
                       }
                       state={choosing ? { patientId: r.id } : undefined}
+                      onClick={() => {
+                        if (choosing && 'birthDate' in r) {
+                          queryClient.setQueryData(
+                            staffKeys.detail(user!.id, r.id),
+                            nursePatient(r),
+                          );
+                        }
+                      }}
                     >
                       {choosing ? '선택 ›' : '상세 보기 ›'}
                     </Link>
