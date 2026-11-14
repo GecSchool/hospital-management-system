@@ -6,6 +6,8 @@ import { availabilityRouter } from '../modules/doctor-schedule/routes/availabili
 import { leaveRouter } from '../modules/doctor-schedule/routes/leave.routes.js';
 import { appointmentSlotsRouter } from '../modules/doctor-schedule/routes/appointment-slots.routes.js';
 import { appointmentRouter } from '../modules/appointment/routes/appointment.routes.js';
+import { receptionRouter } from '../modules/reception/routes/reception.routes.js';
+import { callingRouter } from '../modules/reception/routes/calling.routes.js';
 
 export const apiRouter = Router();
 apiRouter.use('/accounts', accountRouter);
@@ -15,3 +17,5 @@ apiRouter.use(availabilityRouter);
 apiRouter.use(leaveRouter);
 apiRouter.use(appointmentSlotsRouter);
 apiRouter.use('/appointments', appointmentRouter);
+apiRouter.use('/receptions', receptionRouter);
+apiRouter.use(callingRouter);

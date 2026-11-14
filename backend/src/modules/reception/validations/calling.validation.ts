@@ -1,2 +1,5 @@
-// 예정: REC-05, REC-07 호출·입실. 미구현이며 라우터에 등록하지 않았습니다.
-export {};
+import { parseAccountId } from '../../account/validations/account-query.validation.js';
+/** 접수 ID의 문자열 형식·길이를 확인한다. 잘못되면 400이다. */
+export function parseCallingReceptionId(value: unknown): string {
+  return parseAccountId(value);
+}
