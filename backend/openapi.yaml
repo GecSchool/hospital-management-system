@@ -2956,8 +2956,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "404":
+          description: 대상 없음
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "409":
-          description: "`409 DUPLICATE_ACTIVE_RECEPTION`"
+          description: "중복 미완료 접수는 DUPLICATE_ACTIVE_RECEPTION, 취소·당일 외 예약이나 비활성 대상은 CONFLICT."
           content:
             application/json:
               schema:
@@ -3177,6 +3183,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "404":
+          description: 대상 없음
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "500":
           description: 서버 오류
           content:
@@ -3224,6 +3236,12 @@ paths:
                 $ref: "#/components/schemas/Error"
         "403":
           description: 권한 또는 상태 제한
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: 대상 없음
           content:
             application/json:
               schema:
@@ -3313,8 +3331,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "404":
+          description: 대상 없음
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "409":
-          description: "담당 의사가 이미 진료 중: DOCTOR_BUSY."
+          description: "담당 의사가 진료 중이면 DOCTOR_BUSY, 호출 불가능한 상태는 CONFLICT."
           content:
             application/json:
               schema:
@@ -3376,8 +3400,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "404":
+          description: 대상 없음
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "409":
-          description: "`409 DOCTOR_BUSY`"
+          description: "담당 의사가 진료 중이면 DOCTOR_BUSY, 호출되지 않은 접수는 CONFLICT."
           content:
             application/json:
               schema:

@@ -1,2 +1,15 @@
-// 예정: REC-01~04 접수 관리. 미구현이며 라우터에 등록하지 않았습니다.
-export {};
+import { Router } from 'express';
+import { requireAccount, requireRole } from '../../../common/middlewares/auth.js';
+import * as controller from '../controllers/reception.controller.js';
+import * as query from '../controllers/reception-query.controller.js';
+
+export const receptionRouter = Router();
+receptionRouter.get('/', requireAccount, requireRole('STAFF', 'NURSE'), query.listReceptions);
+receptionRouter.post('/', requireAccount, requireRole('STAFF'), controller.create);
+receptionRouter.get(
+  '/:receptionId',
+  requireAccount,
+  requireRole('STAFF', 'NURSE', 'DOCTOR'),
+  query.getReception,
+);
+receptionRouter.delete('/:receptionId', requireAccount, requireRole('STAFF'), controller.remove);

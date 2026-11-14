@@ -1,2 +1,16 @@
-// 예정: REC-05, REC-07 호출·입실. 미구현이며 라우터에 등록하지 않았습니다.
-export {};
+import { Router } from 'express';
+import { requireAccount, requireRole } from '../../../common/middlewares/auth.js';
+import * as controller from '../controllers/calling.controller.js';
+export const callingRouter = Router();
+callingRouter.post(
+  '/receptions/:receptionId/call',
+  requireAccount,
+  requireRole('NURSE'),
+  controller.call,
+);
+callingRouter.post(
+  '/receptions/:receptionId/confirm-entry',
+  requireAccount,
+  requireRole('NURSE'),
+  controller.confirm,
+);
