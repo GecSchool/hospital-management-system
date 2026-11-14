@@ -3675,7 +3675,13 @@ paths:
                         $ref: "#/components/schemas/Visit"
                       record:
                         type: object
-                        description: 생성된 진료 기록. 세부 응답 형태는 구현 전 확정.
+                        description: 생성된 진료 기록의 식별자와 연결 진료 식별자.
+                        properties:
+                          id: *a2
+                          visitId: *a2
+                        required:
+                          - id
+                          - visitId
                       version:
                         $ref: "#/components/schemas/ClinicalRecordVersion"
                     required:
