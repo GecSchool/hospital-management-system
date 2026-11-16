@@ -15,9 +15,16 @@ describe('HTTP 서버 준비 상태', () => {
     expect(response.text).toContain('openapi:');
   });
 
-  it('미구현 뼈대만 있는 도메인은 API로 등록하지 않는다', async () => {
-    expect((await request(app).get('/api/v1/departments')).status).toBe(404);
+  it('등록하지 않은 경로는 404를 반환한다', async () => {
     expect((await request(app).get('/api/v1/visits')).status).toBe(404);
+  });
+
+  it('진료과·계정 관리 API는 실제 앱에서 인증하지 않으면 차단한다', async () => {
+    expect((await request(app).get('/api/v1/departments')).status).toBe(401);
+    expect((await request(app).post('/api/v1/departments').send({ name: 'x' })).status).toBe(401);
+    expect((await request(app).post('/api/v1/account-invitations').send({})).status).toBe(401);
+    expect((await request(app).post('/api/v1/accounts/example/password-reset')).status).toBe(401);
+    expect((await request(app).get('/api/v1/auth/me')).status).toBe(401);
   });
 
   it('예약 API는 실제 앱에서 인증하지 않으면 차단한다', async () => {

@@ -6,8 +6,8 @@
 backend/src/
 ├── app.ts                     # 공통 미들웨어와 라우터 조립
 ├── server.ts                  # 포트 리스닝
-├── config/                    # 환경변수 검증·Prisma 클라이언트
-├── common/                    # 공통 오류·응답·미들웨어·날짜/페이지 도구
+├── config/                    # 환경변수 검증·Prisma 클라이언트·세션 설정
+├── common/                    # 공통 오류·응답·미들웨어·날짜/페이지 도구·임시 저장소·메일
 ├── modules/
 │   ├── account/               # 계정 조회·상태 변경
 │   ├── auth/                  # 인증·초대·초기화
@@ -41,9 +41,9 @@ backend/src/
 
 | 도메인 | 예정 업무와 API |
 |---|---|
-| `auth` | 세션 AUTH-01~03, 가입·초대 AUTH-04~05/ACC-03, 비밀번호 초기화 AUTH-06~07/ACC-05 |
+| `auth` | 세션 AUTH-01~03, 가입·초대 AUTH-04~05/ACC-03, 비밀번호 초기화 AUTH-06~07/ACC-05는 구현됨. 정한 값과 흐름은 [인증 설계](auth-design.md) 참고 |
 | `account` | 계정 조회 ACC-01~02는 구현됨, 상태 변경 ACC-04는 미구현 |
-| `department` | 진료과 CRUD·상태 DEP-01~05 |
+| `department` | 진료과 CRUD·상태 DEP-01~05는 구현됨 |
 | `medical-staff` | 의료진 조회 DEP-06~07은 구현됨, 소속 변경 DEP-08은 미구현 |
 | `patient` | 환자 PAT-01~04, 직원용 진료 이력 PAT-07 |
 | `doctor-schedule` | 가능 시간 SCH-01~02, 휴진 SCH-03~04, 예약 가능 시간 SCH-05 |
@@ -56,7 +56,7 @@ backend/src/
 
 URL 접두사와 도메인은 일치하지 않을 수 있다. 예를 들어 환자의 진료 이력 URL은 `clinical-record`에, 의사의 재진 예약 URL은 `appointment`에 연결하되 공통 라우터 조립 시 명세의 URL을 유지한다. 계정 초대·비밀번호 초기화, 진료과는 팀원 담당이므로 실제 구현 시 팀원과 파일 경계를 맞춘다.
 
-`app.ts`는 요청 ID → 보안 헤더 → 선택적 CORS → JSON 파싱 → Swagger 및 라우터 → API 404 → 공통 오류 처리 순으로 연결한다. Swagger UI의 인라인 초기화에 필요한 CSP 예외는 문서 경로에만 적용한다. `CORS_ORIGIN`을 지정하지 않으면 CORS 미들웨어를 사용하지 않는다. 개발 Vite 프록시에는 별도 CORS 설정이 필요 없다.
+`app.ts`는 요청 ID → 보안 헤더 → 선택적 CORS → JSON 파싱 → Swagger → 세션(`/api/v1`만) → 라우터 → API 404 → 공통 오류 처리 순으로 연결한다. 세션·토큰 저장소·메일 발송은 `server.ts`가 `createAuthRuntime()`으로 만들어 `createApp()`에 넘긴다. Swagger UI의 인라인 초기화에 필요한 CSP 예외는 문서 경로에만 적용한다. `CORS_ORIGIN`을 지정하지 않으면 CORS 미들웨어를 사용하지 않는다. 개발 Vite 프록시에는 별도 CORS 설정이 필요 없다.
 
 세션·Redis·CSRF·요청 제한은 인증 담당 작업과 연결해야 하며 아직 미구현이다. 공통 인증 인터페이스가 존재하더라도 실제 인증이나 리소스 접근 제한이 적용된 것은 아니다. 인증 제공자는 요청마다 계정의 현재 상태·역할·소속을 확인해야 한다. 환자·진료 기록 등의 대상별 접근 제어는 각 업무에서 별도 검증한다.
 
