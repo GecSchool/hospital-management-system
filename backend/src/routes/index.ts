@@ -20,9 +20,25 @@ import { staffDashboardRouter } from '../modules/dashboard/routes/staff-dashboar
 import { doctorScheduleRouter } from '../modules/dashboard/routes/doctor-schedule.routes.js';
 import { adminDashboardRouter } from '../modules/dashboard/routes/admin-dashboard.routes.js';
 import { callingRouter } from '../modules/reception/routes/calling.routes.js';
+import { sessionRouter } from '../modules/auth/routes/session.routes.js';
+import {
+  accountInvitationRouter,
+  invitationRouter,
+} from '../modules/auth/routes/invitation.routes.js';
+import {
+  accountPasswordResetRouter,
+  passwordResetRouter,
+} from '../modules/auth/routes/password-reset.routes.js';
+import { departmentRouter } from '../modules/department/routes/department.routes.js';
 
 export const apiRouter = Router();
+apiRouter.use('/auth', sessionRouter);
+apiRouter.use('/auth/invitations', invitationRouter);
+apiRouter.use('/auth/password-resets', passwordResetRouter);
+apiRouter.use('/account-invitations', accountInvitationRouter);
 apiRouter.use('/accounts', accountRouter);
+apiRouter.use('/accounts', accountPasswordResetRouter);
+apiRouter.use('/departments', departmentRouter);
 apiRouter.use(medicalStaffRouter);
 apiRouter.use('/patients', patientRouter);
 apiRouter.use(availabilityRouter);
