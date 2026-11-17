@@ -2,6 +2,9 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { useAuth } from '../auth/useAuth';
+import { BirthDateInput } from '../staff/BirthDateInput';
+import { PhoneInput } from '../staff/PhoneInput';
+import { normalizeDate } from '../staff/validation';
 import { staffService } from '../staff/service';
 import type { StaffService } from '../staff/staffService';
 import { AppointmentForm } from '../appointments/AppointmentFormPage';
@@ -16,7 +19,7 @@ import {
 } from '../../components/ui';
 import { Loading, ErrorState } from '../../components/common';
 import { PageHeader } from '../../components/layout';
-import { dateTimeLabel, statusLabels } from '../staff/format';
+import { dateTimeLabel, formatPhone, statusLabels } from '../staff/format';
 import type { AppointmentFilters } from '../appointments/service';
 import type { PatientFilters } from '../staff/types';
 import { staffKeys } from '../staff/queries';
@@ -59,6 +62,7 @@ function Session({ source }: { source: StaffService }) {
   const choosing = location.pathname.endsWith('/new');
   const forming = !!patientId;
   const [draft, setDraft] = useState<PatientFilters & AppointmentFilters>({});
+  const [birthDateError, setBirthDateError] = useState('');
   const [criteria, setCriteria] = useState({ filters: draft, revision: 0 });
   const [page, setPage] = useState(1);
   const base = [...bookingKey(user!.id), user!.department?.id, 'nurse', scope];
@@ -121,7 +125,20 @@ function Session({ source }: { source: StaffService }) {
         className="nurse-filters"
         onSubmit={(e) => {
           e.preventDefault();
-          setCriteria((p) => ({ filters: draft, revision: p.revision + 1 }));
+          if (choosing && draft.birthDate && !normalizeDate(draft.birthDate)) {
+            setBirthDateError('생년월일을 YYYY.MM.DD 형식으로 확인해 주세요.');
+            return;
+          }
+          setBirthDateError('');
+          setCriteria((p) => ({
+            filters: {
+              ...draft,
+              birthDate: draft.birthDate
+                ? normalizeDate(draft.birthDate)
+                : undefined,
+            },
+            revision: p.revision + 1,
+          }));
           setPage(1);
         }}
       >
@@ -138,17 +155,16 @@ function Session({ source }: { source: StaffService }) {
           <>
             <label>
               생년월일
-              <Input
-                type="date"
+              <BirthDateInput
                 value={draft.birthDate ?? ''}
-                onChange={(e) => set('birthDate', e.target.value)}
+                onChange={(value) => set('birthDate', value)}
               />
             </label>
             <label>
               연락처
-              <Input
+              <PhoneInput
                 value={draft.phone ?? ''}
-                onChange={(e) => set('phone', e.target.value)}
+                onChange={(value) => set('phone', value)}
               />
             </label>
           </>
@@ -196,6 +212,7 @@ function Session({ source }: { source: StaffService }) {
           검색
         </Button>
       </form>
+      {birthDateError && <p role="alert">{birthDateError}</p>}
       {doctors.isError && (
         <ErrorState
           message={bookingError(doctors.error)}
@@ -236,7 +253,8 @@ function Session({ source }: { source: StaffService }) {
                 {
                   id: 'info',
                   header: choosing ? '연락처' : '담당 의사',
-                  render: (r) => ('doctor' in r ? r.doctor.name : r.phone),
+                  render: (r) =>
+                    'doctor' in r ? r.doctor.name : formatPhone(r.phone),
                 },
                 ...(!choosing
                   ? [
