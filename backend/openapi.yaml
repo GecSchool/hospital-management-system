@@ -70,7 +70,7 @@ info:
     9. **의사 미처리 업무:** 오늘 이후 미접수 유효 예약 및 미완료 접수·진료가 있으면 계정 비활성화·소속 변경을 제한한다. 지난 날짜의 미접수 예약은 제한하지 않는다. 비활성 계정도
     비밀번호를 재설정할 수 있으나 자동 활성화되지는 않는다.
 
-    10. **환자 주민등록번호:** 중복 등록은 허용하지 않는다. 직원은 번호를 변경할 수 있으며 다른 환자와 중복은 허용하지 않는다. 새 암호문·중복 조회값·생년월일을 함께 갱신한다. 미변경 시 생략하고 응답을 마스킹한다. 추가 필수값은 미정이다.
+    10. **환자 주민등록번호:** 중복 등록은 허용하지 않는다. 등록 후 번호는 수정할 수 없으며 수정 요청에 포함하면 전체 요청을 400 VALIDATION_ERROR로 거부한다. 응답은 마스킹한다. 추가 필수값은 미정이다.
 
     11. **관리자 목록·초대:** 별도 검색 조건과 활성 계정 집계는 확정. SMTP 요청 실패 후 재시도·Redis/DB 실패 복구는 구현 전에 정한다.
 
@@ -1983,6 +1983,7 @@ paths:
         - name: phone
           in: query
           required: false
+          description: 하이픈을 무시하고 연락처의 일치하는 부분을 검색한다.
           schema: *a1
         - name: patientNumber
           in: query
@@ -2029,7 +2030,7 @@ paths:
               example:
                 data:
                   - id: pat_01
-                    patientNumber: P0001042
+                    patientNumber: P00001042
                     name: 김서연
                     birthDate: 1985-03-14
                     phone: 010-0000-0001
@@ -2230,9 +2231,9 @@ paths:
       description: |-
         **권한:** STAFF
 
-        **원본 계약:** `{name?,residentNumber?,phone?,...}` → `PatientDetail`
+        **원본 계약:** `{name?,phone?}` → `PatientDetail`
 
-        **업무 규칙:** 응답은 마스킹. 변경하지 않을 주민등록번호는 필드를 생략하며 마스킹 문자열은 유효한 원본 입력이 아니다. 번호 변경을 허용하며 다른 환자와 중복되면 `409 RESIDENT_NUMBER_DUPLICATE`. 새 암호문·중복 조회값·생년월일을 함께 갱신한다.
+        **업무 규칙:** 응답은 마스킹. 주민등록번호는 등록 후 수정할 수 없으며 수정 요청에 `residentNumber`가 포함되면 전체 요청을 `400 VALIDATION_ERROR`로 거부한다.
       parameters:
         - name: patientId
           in: path
@@ -2275,12 +2276,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        "409":
-          description: 주민등록번호 중복 (`RESIDENT_NUMBER_DUPLICATE`)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
         "404":
           description: 대상 없음
           content:
@@ -2299,11 +2294,11 @@ paths:
           application/json:
             schema:
               type: object
+              not:
+                required:
+                  - residentNumber
               properties:
                 name: *a1
-                residentNumber:
-                  type: string
-                  format: password
                 phone: *a1
   /patients/{patientId}/visits:
     get:
@@ -4831,7 +4826,8 @@ components:
         id: *a2
         patientNumber:
           type: string
-          description: 직원 응답에는 필수. 간호사 화면에서는 표시·검색하지 않는다.
+          description: 직원 응답에는 필수. P와 8자리 순번으로 발급하며 기존 다른 형식의 번호는 마이그레이션 시 변경한다. 간호사 화면에서는 표시·검색하지 않는다.
+          example: P00000001
         name: *a1
         birthDate: *a4
         phone: *a1
