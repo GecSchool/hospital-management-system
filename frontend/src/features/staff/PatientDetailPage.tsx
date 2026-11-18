@@ -9,7 +9,7 @@ import { useAuth } from '../auth/useAuth';
 import { PatientForm } from './PatientForm';
 import { PatientHistory } from './PatientHistory';
 import { MockStaffControls } from './MockStaffControls';
-import { dateLabel } from './format';
+import { dateLabel, formatPhone } from './format';
 import { pageFromSearch, staffKeys } from './queries';
 import { staffErrorMessage } from './validation';
 import { useStaff } from './useStaff';
@@ -148,7 +148,7 @@ function PatientDetail({ id }: { id: string }) {
           </div>
           <div>
             <dt>연락처</dt>
-            <dd>{patient.phone}</dd>
+            <dd>{formatPhone(patient.phone)}</dd>
           </div>
         </dl>
       </section>

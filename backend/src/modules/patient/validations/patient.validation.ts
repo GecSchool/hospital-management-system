@@ -46,10 +46,10 @@ export function parsePatientUpdate(body: unknown) {
   if (!body || typeof body !== 'object' || Array.isArray(body))
     throw new AppError(400, 'VALIDATION_ERROR', '요청 본문이 필요합니다.');
   const value = body as Record<string, unknown>;
-  const residentNumber =
-    'residentNumber' in value ? parseResidentNumber(value.residentNumber) : undefined;
+  if ('residentNumber' in value)
+    throw new AppError(400, 'VALIDATION_ERROR', '주민등록번호는 수정할 수 없습니다.');
   const name = value.name === undefined ? undefined : requiredText(value.name, 'name');
   const phone = value.phone === undefined ? undefined : requiredText(value.phone, 'phone');
   if (phone) validatePhone(phone);
-  return { name, phone, residentNumber };
+  return { name, phone };
 }

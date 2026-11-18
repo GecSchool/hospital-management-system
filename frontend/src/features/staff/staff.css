@@ -58,6 +58,10 @@
 .staff-table--patients th:nth-child(1) {
   width: 22%;
 }
+.staff-table--patients td:first-child {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
 .staff-table--patients th:nth-child(2) {
   width: 19%;
 }
@@ -274,6 +278,17 @@
 .staff-patient-fields .ui-form-field > label {
   color: var(--color-text-secondary);
 }
+.staff-resident-label {
+  min-height: 22px;
+  color: var(--color-text-secondary);
+  font: var(--font-label-m);
+}
+.staff-resident-readonly > p:not(.ui-field-hint) {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  font: var(--font-body-m);
+}
 .staff-patient-fields .ui-input {
   height: 36px;
 }
@@ -339,9 +354,14 @@
     flex-wrap: wrap;
   }
 }
-/* Avoid password-manager credential detection for an identity field. DOM value remains transient. */
-.staff-resident-input {
-  -webkit-text-security: disc;
+.resident-number-input {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.resident-number-input .ui-input {
+  min-width: 0;
+  flex: 1;
 }
 .staff-refresh {
   margin: 12px 0;

@@ -13,8 +13,10 @@ import { ErrorState, Loading } from '../../components/common';
 import { PageHeader } from '../../components/layout';
 import { useAuth } from '../auth/useAuth';
 import { PatientForm } from './PatientForm';
+import { BirthDateInput } from './BirthDateInput';
+import { PhoneInput } from './PhoneInput';
 import { MockStaffControls } from './MockStaffControls';
-import { dateLabel } from './format';
+import { dateLabel, formatPhone } from './format';
 import { pageFromSearch, staffKeys } from './queries';
 import { normalizeDate, staffErrorMessage } from './validation';
 import { useStaff } from './useStaff';
@@ -81,7 +83,7 @@ export function PatientListPage() {
       header: '생년월일',
       render: (row) => dateLabel(row.birthDate),
     },
-    { id: 'phone', header: '연락처', render: (row) => row.phone },
+    { id: 'phone', header: '연락처', render: (row) => formatPhone(row.phone) },
     {
       id: 'detail',
       header: <span className="sr-only">상세</span>,
@@ -126,21 +128,41 @@ export function PatientListPage() {
                   label={label}
                   error={field === 'birthDate' ? dateError : undefined}
                 >
-                  <Input
-                    id={`filter-${field}`}
-                    autoComplete="off"
-                    type={field === 'phone' ? 'tel' : 'text'}
-                    placeholder={
-                      field === 'birthDate' ? 'YYYY.MM.DD' : `${label} 입력`
-                    }
-                    value={draft[field] ?? ''}
-                    onChange={(event) =>
-                      setDraft((previous) => ({
-                        ...previous,
-                        [field]: event.target.value,
-                      }))
-                    }
-                  />
+                  {field === 'birthDate' ? (
+                    <BirthDateInput
+                      id={`filter-${field}`}
+                      value={draft.birthDate ?? ''}
+                      onChange={(value) =>
+                        setDraft((previous) => ({
+                          ...previous,
+                          birthDate: value,
+                        }))
+                      }
+                    />
+                  ) : field === 'phone' ? (
+                    <PhoneInput
+                      id={`filter-${field}`}
+                      value={draft.phone ?? ''}
+                      placeholder="연락처 입력"
+                      onChange={(value) =>
+                        setDraft((previous) => ({ ...previous, phone: value }))
+                      }
+                    />
+                  ) : (
+                    <Input
+                      id={`filter-${field}`}
+                      autoComplete="off"
+                      type="text"
+                      placeholder={`${label} 입력`}
+                      value={draft[field] ?? ''}
+                      onChange={(event) =>
+                        setDraft((previous) => ({
+                          ...previous,
+                          [field]: event.target.value,
+                        }))
+                      }
+                    />
+                  )}
                 </FormField>
               );
             },

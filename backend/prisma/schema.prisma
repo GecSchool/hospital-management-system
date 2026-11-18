@@ -117,7 +117,7 @@ model DoctorLeave {
 
 model Patient {
   id                       String        @id @default(cuid())
-  patientNumber            String        @unique @map("patient_number")
+  patientNumber            String        @unique @default(dbgenerated("('P'::text || lpad((nextval('patient_number_seq'::regclass))::text, 8, '0'::text))")) @map("patient_number")
   name                     String
   // Authenticated encryption and a keyed deterministic lookup value are prepared by the application.
   residentNumberCiphertext Bytes         @map("resident_number_ciphertext")
