@@ -10,6 +10,12 @@
   font-weight: 500;
   font-size: 15px;
   white-space: nowrap;
+  transition: color var(--motion-fast) var(--motion-ease),
+    background-color var(--motion-fast) var(--motion-ease),
+    border-color var(--motion-fast) var(--motion-ease);
+}
+.ui-button:active:not(:disabled) {
+  filter: brightness(0.94);
 }
 .ui-button--primary {
   color: var(--color-text-inverse);
@@ -40,6 +46,8 @@
   border-bottom: var(--border-strong);
   border-radius: 0;
   font: var(--font-body-m);
+  transition: border-color var(--motion-fast) var(--motion-ease),
+    background-color var(--motion-fast) var(--motion-ease);
 }
 .ui-input::placeholder {
   color: var(--color-text-secondary);
@@ -47,6 +55,9 @@
 }
 .ui-input:focus {
   border-bottom: 2px solid var(--color-brand-primary);
+}
+input.ui-input:focus {
+  outline: none;
 }
 .ui-input[aria-invalid='true'] {
   border-bottom: 2px solid var(--color-danger-text);
@@ -75,6 +86,7 @@
 }
 .ui-field-error {
   color: var(--color-danger-text);
+  animation: ui-fade-in var(--motion-fast) var(--motion-ease) both;
 }
 .ui-field-hint {
   color: var(--color-text-secondary);
@@ -89,8 +101,12 @@
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-dialog);
 }
+.ui-modal[open] {
+  animation: ui-dialog-in var(--motion-standard) var(--motion-ease) both;
+}
 .ui-modal::backdrop {
   background: var(--color-overlay);
+  animation: ui-fade-in var(--motion-standard) var(--motion-ease) both;
 }
 .ui-modal-header {
   display: flex;
@@ -120,6 +136,7 @@
   margin-top: var(--space-8);
 }
 .ui-table-scroll {
+  position: relative;
   width: 100%;
   overflow-x: auto;
 }
@@ -143,6 +160,14 @@
   padding: var(--space-2) var(--space-4);
   border-bottom: var(--border-default);
   font: var(--font-body-s);
+}
+@media (hover: hover) {
+  .ui-table tbody tr:has(a:hover) td {
+    background-color: var(--color-bg-muted);
+  }
+}
+.ui-table tbody td {
+  transition: background-color var(--motion-fast) var(--motion-ease);
 }
 .ui-table-empty {
   text-align: center;
@@ -179,6 +204,7 @@
   color: var(--color-text-secondary);
   text-align: left;
   font-size: 14px;
+  transition: color var(--motion-fast) var(--motion-ease);
 }
 .ui-tab[aria-selected='true'] {
   color: var(--color-brand-primary);
@@ -192,6 +218,8 @@
   height: 2px;
   width: 100px;
   background: var(--color-brand-primary);
+  transform-origin: left;
+  animation: ui-tab-in var(--motion-fast) var(--motion-ease) both;
 }
 .ui-tab-panel {
   padding-top: var(--space-6);
@@ -209,6 +237,11 @@
   background: transparent;
   color: var(--color-text-secondary);
   font-size: 14px;
+  transition: color var(--motion-fast) var(--motion-ease),
+    background-color var(--motion-fast) var(--motion-ease);
+}
+.ui-pagination button:hover:not(:disabled) {
+  background-color: var(--color-bg-muted);
 }
 .ui-pagination button[aria-current='page'] {
   color: var(--color-brand-primary);
@@ -221,7 +254,52 @@
   padding: var(--space-6) 0;
   color: var(--color-text-secondary);
   font: var(--font-body-s);
+  animation: ui-fade-in var(--motion-fast) var(--motion-ease) both;
 }
 .ui-state-description {
   font: var(--font-caption);
+}
+.ui-loading {
+  flex-direction: row;
+  align-items: center;
+}
+.ui-loading::before {
+  content: '';
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  border: 2px solid var(--color-border-default);
+  border-top-color: var(--color-brand-primary);
+  border-radius: 50%;
+  opacity: 0;
+  animation: ui-loading-reveal 0s linear 250ms forwards,
+    ui-spin 800ms linear 250ms infinite;
+}
+@keyframes ui-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes ui-dialog-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes ui-tab-in {
+  from { transform: scaleX(0.9); opacity: 0; }
+  to { transform: scaleX(1); opacity: 1; }
+}
+@keyframes ui-loading-reveal {
+  to { opacity: 1; }
+}
+@keyframes ui-spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-modal[open], .ui-modal::backdrop, .ui-field-error, .ui-state,
+  .ui-tab[aria-selected='true']::after {
+    animation: none;
+  }
+  .ui-loading::before {
+    opacity: 1;
+    animation: none;
+  }
 }

@@ -6,7 +6,7 @@ export function Loading({
   message?: string;
 }) {
   return (
-    <p className="ui-state" role="status">
+    <p className="ui-state ui-loading" role="status">
       {message}
     </p>
   );
