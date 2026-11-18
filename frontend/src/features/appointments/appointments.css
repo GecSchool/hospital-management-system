@@ -224,6 +224,15 @@
     grid-template-columns: 90px minmax(0, 1fr);
   }
 }
+@media (max-width: 400px) {
+  .appointment-panel-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .appointment-panel-actions .ui-button {
+    padding-inline: 8px;
+  }
+}
 .appointment-panel .ui-modal-body {
   margin-top: 0;
   padding-top: 0;

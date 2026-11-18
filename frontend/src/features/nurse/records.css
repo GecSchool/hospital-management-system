@@ -54,6 +54,7 @@
 .record-history {
   border-bottom: var(--border-default);
   padding: 24px 0;
+  transition: border-color var(--motion-fast) var(--motion-ease);
 }
 .record-history[aria-current='true'] {
   border-left: 3px solid var(--color-brand-primary);

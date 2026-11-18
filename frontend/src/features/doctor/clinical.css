@@ -19,6 +19,8 @@
   padding: 24px 0;
   color: var(--color-text-secondary);
   font: var(--font-body-s);
+  transition: color var(--motion-fast) var(--motion-ease),
+    border-color var(--motion-fast) var(--motion-ease);
 }
 .clinical-history[aria-current='true'] {
   border-left: 3px solid var(--color-brand-primary);
