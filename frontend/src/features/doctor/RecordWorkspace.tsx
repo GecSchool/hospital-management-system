@@ -18,7 +18,7 @@ import { ClinicalHistory } from './ClinicalHistory';
 import { DoctorClose } from './DoctorClose';
 import { DraftExit } from './DraftExit';
 import { ClinicalRead } from './ClinicalRead';
-import { dateLabel, dateTimeLabel } from '../staff/format';
+import { dateLabel, dateTimeLabel, seoulDate } from '../staff/format';
 import './clinical.css';
 import './doctor.css';
 export function ClinicalRecordPanel({
@@ -144,7 +144,7 @@ function CorrectionSession({ source }: { source: StaffService }) {
         }
         description={
           visit.data
-            ? `${visit.data.patient.name} · ${dateLabel(visit.data.patient.birthDate)} · ${visit.data.department.name} · ${visit.data.completedAt ? dateLabel(visit.data.completedAt.slice(0, 10)) : ''}`
+            ? `${visit.data.patient.name} · ${dateLabel(visit.data.patient.birthDate)} · ${visit.data.department.name} · ${visit.data.completedAt ? dateLabel(seoulDate(visit.data.completedAt)) : ''}`
             : undefined
         }
       />
@@ -233,7 +233,7 @@ function CorrectionForm({
         }
         busy={write.pending}
       />
-      <h2>{dateLabel(recordDate.slice(0, 10))} 진료 기록</h2>
+      <h2>{dateLabel(seoulDate(recordDate))} 진료 기록</h2>
       <p className="clinical-version-note">확인한 최신 버전: {base}</p>
       <form
         className="clinical-correction-form"

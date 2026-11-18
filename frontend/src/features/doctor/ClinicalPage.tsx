@@ -12,8 +12,10 @@ import { queryKeys } from '../../services/api/queryKeys';
 import { useBookingWrite } from '../appointments/queries';
 import {
   businessDate,
+  seoulDate,
   dateTimeLabel,
   dateLabel,
+  formatPhone,
   longDateLabel,
   statusLabels,
 } from '../staff/format';
@@ -207,7 +209,8 @@ function ClinicalSession({ source }: { source: StaffService }) {
                 {
                   id: 'phone',
                   header: '연락처',
-                  render: (r) => r.patient.phone || '—',
+                  render: (r) =>
+                    r.patient.phone ? formatPhone(r.patient.phone) : '—',
                 },
                 {
                   id: 'kind',
@@ -261,7 +264,7 @@ function ClinicalSession({ source }: { source: StaffService }) {
         title="환자 진료"
         description={
           patient
-            ? `${patient.name} · ${patient.birthDate ? dateLabel(patient.birthDate) : '—'} · ${visit.data?.department.name ?? user!.department?.name ?? ''} · ${visit.data ? dateLabel(visit.data.startedAt.slice(0, 10)) : dateLabel(date)}`
+            ? `${patient.name} · ${patient.birthDate ? dateLabel(patient.birthDate) : '—'} · ${visit.data?.department.name ?? user!.department?.name ?? ''} · ${visit.data ? dateLabel(seoulDate(visit.data.startedAt)) : dateLabel(date)}`
             : undefined
         }
         actions={
@@ -299,7 +302,7 @@ function ClinicalSession({ source }: { source: StaffService }) {
               visit.data?.status === 'IN_PROGRESS'
                 ? {
                     to: `${location.pathname}?${new URLSearchParams([...params].filter(([key]) => key !== 'record'))}`,
-                    label: `${dateLabel(visit.data.startedAt.slice(0, 10))} · ${visit.data.doctor.name}`,
+                    label: `${dateLabel(seoulDate(visit.data.startedAt))} · ${visit.data.doctor.name}`,
                   }
                 : undefined
             }
@@ -311,7 +314,7 @@ function ClinicalSession({ source }: { source: StaffService }) {
           >
             <h2>
               {selectedRecord
-                ? `${selectedHistory ? dateLabel(selectedHistory.completedAt.slice(0, 10)) : '완료된'} 진료 기록`
+                ? `${selectedHistory ? dateLabel(seoulDate(selectedHistory.completedAt)) : '완료된'} 진료 기록`
                 : '오늘 진료 기록'}
             </h2>
             {visit.data?.status === 'IN_PROGRESS' && !selectedRecord ? (

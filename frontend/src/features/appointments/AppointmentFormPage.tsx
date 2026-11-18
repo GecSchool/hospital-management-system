@@ -10,7 +10,12 @@ import { PageHeader } from '../../components/layout';
 import { useAuth } from '../auth/useAuth';
 import { useStaff } from '../staff/useStaff';
 import { staffKeys } from '../staff/queries';
-import { businessDate, dateTimeLabel, longDateLabel } from '../staff/format';
+import {
+  businessDate,
+  dateTimeLabel,
+  longDateLabel,
+  seoulDate,
+} from '../staff/format';
 import type { StaffAppointment, StaffPatientSummary } from '../staff/types';
 import {
   bookingKey,
@@ -92,7 +97,7 @@ export function AppointmentForm({
   );
   const [doctorId, setDoctor] = useState(appointment?.doctor.id ?? '');
   const [date, setDate] = useState(
-    appointment?.startsAt.slice(0, 10) ?? businessDate(),
+    appointment ? seoulDate(appointment.startsAt) : businessDate(),
   );
   const [time, setTime] = useState(appointment?.startsAt ?? '');
   const [finding, setFinding] = useState(false);
