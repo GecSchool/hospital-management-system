@@ -321,6 +321,9 @@ it('moves a nurse, refreshes medical lists/account cache, and preserves target s
   dialog = await screen.findByRole('dialog', {
     name: '소속을 변경할 수 없습니다',
   });
+  expect(within(dialog).getByRole('alert').textContent).toBe(
+    '처리되지 않은 예약·접수·진료가 있어 소속을 변경할 수 없습니다.',
+  );
   fireEvent.click(within(dialog).getByRole('button', { name: '확인' }));
   dialog = await screen.findByRole('dialog', { name: '의료진 소속 변경' });
   expect(

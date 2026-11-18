@@ -18,13 +18,22 @@ export function normalizeApiError(error: unknown): ApiError {
     const status = error.response?.status;
     const body = error.response?.data?.error;
     const code = typeof body?.code === 'string' ? body.code : 'REQUEST_FAILED';
+    const conflictMessages: Record<string, string> = {
+      DEPARTMENT_NAME_DUPLICATE: '이미 등록된 진료과명입니다.',
+      DEPARTMENT_HAS_STAFF:
+        '소속 의료진이 있는 진료과는 비활성화할 수 없습니다.',
+      DEPARTMENT_IN_USE:
+        '소속 의료진 또는 예약·접수 이력이 있는 진료과는 삭제할 수 없습니다.',
+      RESIDENT_NUMBER_DUPLICATE: '이미 등록된 주민등록번호입니다.',
+    };
     const message =
       status === 401
         ? '로그인 정보를 확인하거나 다시 로그인해 주세요.'
         : status === 403
           ? '이 작업을 수행할 권한이 없습니다.'
           : status === 409
-            ? '정보가 변경되었습니다. 새로 조회한 후 다시 시도해 주세요.'
+            ? (conflictMessages[code] ??
+              '정보가 변경되었습니다. 새로 조회한 후 다시 시도해 주세요.')
             : status === 404
               ? '요청한 기능을 사용할 수 없습니다.'
               : status === 429

@@ -1,7 +1,7 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { Link, useLocation } from 'react-router';
 import type { ClinicalService } from './clinicalService';
-import { dateLabel } from '../staff/format';
+import { dateLabel, seoulDate } from '../staff/format';
 import { ErrorState, Loading } from '../../components/common';
 
 export function ClinicalHistory({
@@ -67,8 +67,8 @@ export function ClinicalHistory({
                 }
               >
                 <p>
-                  {dateLabel(h.completedAt.slice(0, 10))} · {h.department.name}{' '}
-                  · {h.doctor.name}
+                  {dateLabel(seoulDate(h.completedAt))} · {h.department.name} ·{' '}
+                  {h.doctor.name}
                 </p>
                 <p className="clinical-text">{h.summary || '진단 요약 없음'}</p>
                 {selected === h.clinicalRecordId && (

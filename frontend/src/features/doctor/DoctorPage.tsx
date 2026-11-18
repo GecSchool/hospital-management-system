@@ -14,6 +14,7 @@ import { Button, Input, Modal } from '../../components/ui';
 import { ErrorState, Loading } from '../../components/common';
 import {
   businessDate,
+  seoulDate,
   dateLabel,
   dateTimeLabel,
   longDateLabel,
@@ -289,7 +290,7 @@ function Session({ source }: { source: StaffService }) {
                             );
                             const items = allItems.filter(
                               (a) =>
-                                a.time.slice(0, 10) === d &&
+                                seoulDate(a.time) === d &&
                                 minutes(dateTimeLabel(a.time, true)) >= m &&
                                 minutes(dateTimeLabel(a.time, true)) < m + 20,
                             );
@@ -502,8 +503,7 @@ function Session({ source }: { source: StaffService }) {
               {
                 schedule.data.appointments.filter(
                   (a) =>
-                    a.startsAt.slice(0, 10) === date &&
-                    a.status !== 'CANCELLED',
+                    seoulDate(a.startsAt) === date && a.status !== 'CANCELLED',
                 ).length
               }
               건
@@ -662,7 +662,7 @@ function AvailabilityEditor({
 function patientPath(item: ReturnType<typeof scheduleItems>[number]) {
   if (item.visitId) return `/doctor/visits/${encodeURIComponent(item.visitId)}`;
   const params = new URLSearchParams({
-    date: item.time.slice(0, 10),
+    date: seoulDate(item.time),
     patient: item.patient.id,
   });
   if (item.appointmentId) params.set('appointment', item.appointmentId);
