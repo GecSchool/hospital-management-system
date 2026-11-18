@@ -150,7 +150,11 @@ export function DepartmentDialog({
           </Button>
         }
       >
-        <p role="alert">{write.error}</p>
+        <p role="alert">
+          {write.code === 'DOCTOR_HAS_PENDING_WORK' && action.kind === 'move'
+            ? '처리되지 않은 예약·접수·진료가 있어 소속을 변경할 수 없습니다.'
+            : write.error}
+        </p>
       </Modal>
     );
   if (confirm)

@@ -21,6 +21,8 @@ export function staffErrorMessage(reason: unknown): string {
   const error = normalizeApiError(reason);
   if (error.status === 404)
     return '환자 정보를 찾을 수 없습니다. 목록에서 다시 확인해 주세요.';
+  if (error.code === 'RESIDENT_NUMBER_DUPLICATE')
+    return '이미 등록된 주민등록번호입니다.';
   if (error.status === 409)
     return '중복되거나 변경된 정보가 있습니다. 입력 내용을 확인해 주세요.';
   if (import.meta.env.DEV && error.code === 'MOCK_SYNTHETIC_ONLY')
