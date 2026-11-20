@@ -132,7 +132,7 @@ it('shows an empty first-visit history without enabling completion', async () =>
   );
   expect(screen.queryByRole('button', { name: '진료 완료' })).toBeNull();
 });
-it('keeps a clinical draft on continue and confirms departure without completing Visit', async () => {
+it('keeps a clinical draft while browsing history and guards leaving the visit', async () => {
   const f = await fixture();
   const r = await f.service.intake.create({ appointmentId: f.appointment.id });
   await f.nurse.call(r.id);
@@ -141,27 +141,57 @@ it('keeps a clinical draft on continue and confirms departure without completing
   fireEvent.change(await screen.findByLabelText('증상'), {
     target: { value: '[가상] 미저장 내용' },
   });
+  fireEvent.change(screen.getByLabelText('진단'), {
+    target: { value: '[가상] 미저장 진단' },
+  });
   const unload = new Event('beforeunload', { cancelable: true });
   window.dispatchEvent(unload);
   expect(unload.defaultPrevented).toBe(true);
   fireEvent.click(
     await screen.findByRole('link', { name: /2026.11.05.*이전 진단/ }),
   );
-  let dialog = await screen.findByRole('dialog', {
+  await screen.findByText('[가상] 이전 진단');
+  expect(screen.queryByRole('dialog')).toBeNull();
+  fireEvent.click(screen.getByRole('link', { name: '진료 일정' }));
+  const historyDialog = await screen.findByRole('dialog', {
     name: '작성 중인 진료를 나갈까요?',
   });
-  fireEvent.click(within(dialog).getByRole('button', { name: '계속 작성' }));
+  fireEvent.click(within(historyDialog).getByRole('button', { name: '계속 작성' }));
+  fireEvent.click(screen.getByRole('link', { name: /2026.11.09.*진료 중/ }));
   expect((screen.getByLabelText('증상') as HTMLTextAreaElement).value).toBe(
     '[가상] 미저장 내용',
   );
+  expect((screen.getByLabelText('진단') as HTMLTextAreaElement).value).toBe(
+    '[가상] 미저장 진단',
+  );
   fireEvent.click(screen.getByRole('link', { name: '진료 일정' }));
-  dialog = await screen.findByRole('dialog');
+  const dialog = await screen.findByRole('dialog');
   fireEvent.click(within(dialog).getByRole('button', { name: '나가기' }));
   await screen.findByRole('table', { name: '주간 시간표' });
   expect((await f.clinical.visit(visit.id)).status).toBe('IN_PROGRESS');
   const after = new Event('beforeunload', { cancelable: true });
   window.dispatchEvent(after);
   expect(after.defaultPrevented).toBe(false);
+});
+it('shows a user-facing confirmation for incomplete clinical fields', async () => {
+  const f = await fixture();
+  const r = await f.service.intake.create({ appointmentId: f.appointment.id });
+  await f.nurse.call(r.id);
+  const visit = await f.nurse.enter(r.id);
+  await mount(f.service, `/doctor/visits/${visit.id}`);
+  await screen.findByLabelText('증상');
+  fireEvent.click(screen.getByRole('button', { name: '진료 완료' }));
+  expect(await screen.findByText('입력하지 않은 항목이 있습니다. 이대로 진료를 완료하시겠습니까?')).toBeTruthy();
+  expect(screen.queryByText(/현재 명세에는/)).toBeNull();
+});
+it.each([
+  ['2026-11-09', '오늘 예약 환자', '오늘 내원 환자'],
+  ['2026-11-10', '예약 환자', '내원 환자'],
+  ['2026-11-08', '예약 환자', '내원 환자'],
+])('labels the daily lists for %s', async (date, appointments, receptions) => {
+  await mount(createMockStaffService({ latencyMs: 0 }), `/doctor/schedule/day?date=${date}`);
+  expect(await screen.findByRole('heading', { name: appointments })).toBeTruthy();
+  expect(screen.getByRole('heading', { name: receptions })).toBeTruthy();
 });
 it('guards correction cancel/close and leaves immutable versions intact', async () => {
   const f = await fixture();

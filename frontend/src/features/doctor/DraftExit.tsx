@@ -41,6 +41,8 @@ export function DraftExit({
           (element.target === '_blank' || element.hasAttribute('download')))
       )
         return;
+      // Switching records in the current workspace retains the mounted draft.
+      if (!busy && element.hasAttribute('data-draft-safe-navigation')) return;
       event.preventDefault();
       event.stopPropagation();
       if (!busy) setTarget(element);
