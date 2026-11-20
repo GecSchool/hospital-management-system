@@ -26,6 +26,7 @@ export type AuthRuntime = {
   accountProvider: AccountProvider;
   /** 초대·재설정 토큰과 세션 무효화 번호 보관소. */
   store: KeyValueStore;
+  doctorListCache?: KeyValueStore;
   mailer: Mailer;
   limiters: AuthLimiters;
   /** 메일의 링크가 가리킬 프론트엔드 주소. */
@@ -36,6 +37,7 @@ export function buildAuthRuntime(parts: {
   sessionSecret: string;
   sessionStore?: session.Store;
   store: KeyValueStore;
+  doctorListCache?: KeyValueStore;
   mailer: Mailer;
   appBaseUrl: string;
 }): AuthRuntime {
@@ -54,6 +56,7 @@ export function buildAuthRuntime(parts: {
       return account;
     },
     store: parts.store,
+    doctorListCache: parts.doctorListCache,
     mailer: parts.mailer,
     limiters: createAuthLimiters(),
     appBaseUrl: parts.appBaseUrl,
@@ -81,10 +84,12 @@ export async function createAuthRuntime(config: AuthConfig): Promise<AuthRuntime
   }
   if (!config.smtp) notes.push('SMTP_HOST가 없어 메일을 보내지 않고 이 콘솔에 내용을 출력합니다.');
   for (const note of notes) console.warn(`[개발용 설정] ${note}`);
+  const redisStore = redis && new RedisKeyValueStore(redis);
   return buildAuthRuntime({
     sessionSecret,
     sessionStore: redis && new RedisStore({ client: redis, prefix: 'hospital:session:' }),
-    store: redis ? new RedisKeyValueStore(redis) : new MemoryKeyValueStore(),
+    store: redisStore ?? new MemoryKeyValueStore(),
+    doctorListCache: redisStore,
     mailer: config.smtp ? createSmtpMailer(config.smtp, config.mailFrom) : createConsoleMailer(),
     appBaseUrl: config.appBaseUrl,
   });

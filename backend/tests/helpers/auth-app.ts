@@ -40,6 +40,7 @@ export function createAuthTestApp() {
   const auth = buildAuthRuntime({
     sessionSecret: 'test-only-session-secret-0123456789abcdef',
     store,
+    doctorListCache: store,
     mailer: {
       async send(message) {
         if (mailFails) throw new Error('SMTP unavailable');

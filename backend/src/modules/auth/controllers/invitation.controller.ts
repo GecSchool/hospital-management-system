@@ -25,10 +25,11 @@ export const verify: RequestHandler = async (req, res) => {
 };
 
 export const accept: RequestHandler = async (req, res) => {
-  const { store } = getAuthRuntime(req);
+  const { store, doctorListCache } = getAuthRuntime(req);
   const created = await invitationService.acceptInvitation(
     parsePasswordSubmission(req.body),
     store,
+    doctorListCache,
   );
   sendData(res, created, 201);
 };

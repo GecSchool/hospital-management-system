@@ -2,6 +2,7 @@
 import { AppError } from '../../../common/errors/index.js';
 import type { Mailer } from '../../../common/mail/mailer.js';
 import type { KeyValueStore } from '../../../common/stores/key-value-store.js';
+import { invalidateDoctorLists } from '../../medical-staff/services/doctor-list-cache.js';
 import { getPrismaClient } from '../../../config/prisma.js';
 import { INVITATION_TTL_SECONDS } from '../auth-policy.js';
 import type { InvitationRequest } from '../validations/invitation.validation.js';
@@ -75,6 +76,7 @@ export async function verifyInvitation(token: string, store: KeyValueStore) {
 export async function acceptInvitation(
   input: { token: string; password: string },
   store: KeyValueStore,
+  doctorListCache?: KeyValueStore,
 ) {
   const taken = await takeToken<InvitationRequest>(store, KIND, input.token);
   if (!taken) throw invalidLink();
@@ -113,6 +115,7 @@ export async function acceptInvitation(
         select: { id: true },
       });
     });
+    if (invitation.role === 'DOCTOR') await invalidateDoctorLists(doctorListCache);
     await finishToken(store, KIND, invitation.email, taken);
     return { accountId: account.id };
   } catch (error) {
