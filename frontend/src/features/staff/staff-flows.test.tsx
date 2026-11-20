@@ -66,8 +66,11 @@ function fillRegistration(dialog: HTMLElement) {
   fireEvent.change(within(dialog).getByLabelText('이름'), {
     target: { value: '가상신규환자' },
   });
-  fireEvent.change(within(dialog).getByLabelText('주민등록번호'), {
-    target: { value: '900101-0000000' },
+  fireEvent.change(within(dialog).getByLabelText('주민등록번호 앞자리'), {
+    target: { value: '900101' },
+  });
+  fireEvent.change(within(dialog).getByLabelText('주민등록번호 뒷자리'), {
+    target: { value: '0000000' },
   });
   fireEvent.change(within(dialog).getByLabelText('연락처'), {
     target: { value: '010-0000-9999' },
@@ -141,8 +144,11 @@ describe('patient list and registration', () => {
       target: { value: '가상환자001' },
     });
     fireEvent.change(screen.getByLabelText('생년월일'), {
-      target: { value: '1985.03.14' },
+      target: { value: '19850314' },
     });
+    expect((screen.getByLabelText('생년월일') as HTMLInputElement).value).toBe(
+      '1985.03.14',
+    );
     fireEvent.change(screen.getByLabelText('연락처'), {
       target: { value: '010-0000-0001' },
     });
@@ -160,6 +166,17 @@ describe('patient list and registration', () => {
     );
     for (const sensitive of ['가상환자001', '1985-03-14', '010-0000-0001'])
       expect(keys).not.toContain(sensitive);
+  });
+  it('formats pasted birth dates and lets users delete across separators', async () => {
+    await start();
+    await listReady();
+    const birthDate = screen.getByLabelText('생년월일') as HTMLInputElement;
+    fireEvent.change(birthDate, { target: { value: '1985-03-14' } });
+    expect(birthDate.value).toBe('1985.03.14');
+    birthDate.setSelectionRange(5, 5);
+    fireEvent.keyDown(birthDate, { key: 'Backspace' });
+    expect(birthDate.value).toBe('1980.31.4');
+    expect(birthDate.selectionStart).toBe(3);
   });
   it('shows no search results and validates impossible birth dates', async () => {
     const { service } = await start();
@@ -188,8 +205,8 @@ describe('patient list and registration', () => {
     expect(within(dialog).getAllByRole('alert')).toHaveLength(3);
     expect(service.create).not.toHaveBeenCalled();
     fillRegistration(dialog);
-    fireEvent.change(within(dialog).getByLabelText('주민등록번호'), {
-      target: { value: '850314-•••••••' },
+    fireEvent.change(within(dialog).getByLabelText('주민등록번호 뒷자리'), {
+      target: { value: '123' },
     });
     fireEvent.change(within(dialog).getByLabelText('연락처'), {
       target: { value: 'not-a-phone' },
@@ -197,6 +214,36 @@ describe('patient list and registration', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: '등록' }));
     expect(within(dialog).getAllByRole('alert')).toHaveLength(2);
     expect(service.create).not.toHaveBeenCalled();
+  });
+  it('splits a pasted resident number, displays both parts and submits one value', async () => {
+    const { service } = await start();
+    service.create = vi.fn(service.create);
+    const dialog = await openRegistration();
+    const front = within(dialog).getByLabelText(
+      '주민등록번호 앞자리',
+    ) as HTMLInputElement;
+    const back = within(dialog).getByLabelText(
+      '주민등록번호 뒷자리',
+    ) as HTMLInputElement;
+    expect(front.type).toBe('text');
+    expect(back.type).toBe('text');
+    fireEvent.paste(front, {
+      clipboardData: { getData: () => '900101-0000000' },
+    });
+    expect(front.value).toBe('900101');
+    expect(back.value).toBe('0000000');
+    expect(document.activeElement).toBe(back);
+    fireEvent.change(within(dialog).getByLabelText('이름'), {
+      target: { value: '가상신규환자' },
+    });
+    fireEvent.change(within(dialog).getByLabelText('연락처'), {
+      target: { value: '01000009999' },
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: '등록' }));
+    await screen.findByRole('link', { name: '가상신규환자 상세 보기' });
+    expect(service.create).toHaveBeenCalledWith(
+      expect.objectContaining({ residentNumber: '9001010000000' }),
+    );
   });
   it('registers a synthetic patient, refreshes the list, and exposes only the masked identity', async () => {
     const { client } = await start();
@@ -229,7 +276,12 @@ describe('patient list and registration', () => {
     fillRegistration(dialog);
     fireEvent.click(within(dialog).getByRole('button', { name: '취소' }));
     dialog = await openRegistration();
-    for (const label of ['이름', '주민등록번호', '연락처'])
+    for (const label of [
+      '이름',
+      '주민등록번호 앞자리',
+      '주민등록번호 뒷자리',
+      '연락처',
+    ])
       expect(
         (within(dialog).getByLabelText(label) as HTMLInputElement).value,
       ).toBe('');
@@ -246,7 +298,12 @@ describe('patient list and registration', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: '등록' }));
     await within(dialog).findByRole('alert');
     expect(
-      (within(dialog).getByLabelText('주민등록번호') as HTMLInputElement).value,
+      (within(dialog).getByLabelText('주민등록번호 앞자리') as HTMLInputElement)
+        .value,
+    ).toBe('');
+    expect(
+      (within(dialog).getByLabelText('주민등록번호 뒷자리') as HTMLInputElement)
+        .value,
     ).toBe('');
     fillRegistration(dialog);
     fireEvent.click(within(dialog).getByRole('button', { name: '등록' }));
@@ -303,9 +360,16 @@ describe('patient detail and histories', () => {
     await screen.findByRole('table', { name: '예약 이력' });
     fireEvent.click(screen.getByRole('button', { name: '정보 수정' }));
     const dialog = screen.getByRole('dialog', { name: '환자 정보 수정' });
+    expect(within(dialog).getByText('850314-•••••••')).toBeTruthy();
     expect(
-      (within(dialog).getByLabelText('주민등록번호') as HTMLInputElement)
-        .readOnly,
+      within(dialog).queryByRole('textbox', { name: '주민등록번호' }),
+    ).toBeNull();
+    expect(
+      (
+        within(dialog).getByRole('button', {
+          name: '저장',
+        }) as HTMLButtonElement
+      ).disabled,
     ).toBe(true);
     fireEvent.change(within(dialog).getByLabelText('이름'), {
       target: { value: '가상수정환자' },
@@ -313,11 +377,14 @@ describe('patient detail and histories', () => {
     fireEvent.change(within(dialog).getByLabelText('연락처'), {
       target: { value: '010-0000-8888' },
     });
+    expect(
+      (within(dialog).getByLabelText('연락처') as HTMLInputElement).value,
+    ).toBe('010-0000-8888');
     fireEvent.click(within(dialog).getByRole('button', { name: '저장' }));
     await screen.findByRole('heading', { name: '가상수정환자' });
     expect(service.update).toHaveBeenCalledWith('demo-patient', {
       name: '가상수정환자',
-      phone: '010-0000-8888',
+      phone: '01000008888',
     });
     const history = await screen.findByRole('table', { name: '예약 이력' });
     await waitFor(() =>
@@ -326,6 +393,34 @@ describe('patient detail and histories', () => {
     fireEvent.click(screen.getByRole('link', { name: '환자 목록' }));
     await screen.findByRole('link', { name: '가상수정환자 상세 보기' });
     expect(screen.getByText('010-0000-8888')).toBeTruthy();
+  });
+  it('formats the phone during typing and supports deletion across separators', async () => {
+    await start('/staff/patients/demo-patient');
+    await screen.findByRole('heading', { name: '가상환자001' });
+    fireEvent.click(screen.getByRole('button', { name: '정보 수정' }));
+    const input = within(screen.getByRole('dialog')).getByLabelText(
+      '연락처',
+    ) as HTMLInputElement;
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: '01033334444' } });
+    expect(input.value).toBe('010-3333-4444');
+    fireEvent.change(input, { target: { value: '0103333444' } });
+    expect(input.value).toBe('010-333-3444');
+    fireEvent.change(input, { target: { value: '0103333' } });
+    expect(input.value).toBe('010-333-3');
+    fireEvent.change(input, { target: { value: '01033334444' } });
+    fireEvent.blur(input);
+    expect(input.value).toBe('010-3333-4444');
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: '010-33334444' } });
+    expect(input.value).toBe('010-3333-4444');
+    input.setSelectionRange(4, 4);
+    fireEvent.keyDown(input, { key: 'Backspace' });
+    expect(input.value).toBe('013-333-4444');
+    expect(input.selectionStart).toBe(2);
+    fireEvent.change(input, { target: { value: '01033334444' } });
+    fireEvent.blur(input);
+    expect(input.value).toBe('010-3333-4444');
   });
   it('cancels edits and resets the draft on reopening', async () => {
     await start('/staff/patients/demo-patient');

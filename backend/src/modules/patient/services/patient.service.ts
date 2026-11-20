@@ -1,5 +1,4 @@
-import { randomUUID } from 'node:crypto';
-import type { Prisma } from '../../../generated/prisma/client.js';
+import { Prisma } from '../../../generated/prisma/client.js';
 import { AppError } from '../../../common/errors/index.js';
 import { paginationMeta } from '../../../common/utils/pagination.js';
 import * as dbConfig from '../../../config/prisma.js';
@@ -44,15 +43,33 @@ export async function listPatients(
   query: ReturnType<typeof parsePatientQuery>,
   includeNumber: boolean,
 ) {
+  const db = dbConfig.getPrismaClient();
+  if (query.phone) {
+    const phone = query.phone.replaceAll('-', '') || query.phone;
+    const conditions = [Prisma.sql`replace(phone, '-', '') LIKE ${`%${escapeLike(phone)}%`}`];
+    if (query.name) conditions.push(Prisma.sql`name ILIKE ${`%${escapeLike(query.name)}%`}`);
+    if (query.patientNumber)
+      conditions.push(Prisma.sql`patient_number ILIKE ${`%${escapeLike(query.patientNumber)}%`}`);
+    if (query.birthDate) conditions.push(Prisma.sql`birth_date = ${query.birthDate}::date`);
+    const filter = Prisma.join(conditions, ' AND ');
+    const [rows, counts] = await Promise.all([
+      db.$queryRaw<
+        Row[]
+      >`SELECT id, patient_number AS "patientNumber", name, birth_date AS "birthDate", phone FROM patients WHERE ${filter} ORDER BY name ASC, id ASC LIMIT ${query.size} OFFSET ${query.skip}`,
+      db.$queryRaw<{ total: bigint }[]>`SELECT count(*) AS total FROM patients WHERE ${filter}`,
+    ]);
+    return {
+      data: rows.map((row) => summary(row, includeNumber)),
+      meta: paginationMeta(query.page, query.size, Number(counts[0].total)),
+    };
+  }
   const where: Prisma.PatientWhereInput = {
     ...(query.name && { name: { contains: escapeLike(query.name), mode: 'insensitive' } }),
-    ...(query.phone && { phone: { contains: escapeLike(query.phone) } }),
     ...(query.patientNumber && {
       patientNumber: { contains: escapeLike(query.patientNumber), mode: 'insensitive' },
     }),
     ...(query.birthDate && { birthDate: new Date(`${query.birthDate}T00:00:00Z`) }),
   };
-  const db = dbConfig.getPrismaClient();
   const [rows, total] = await Promise.all([
     db.patient.findMany({
       where,
@@ -80,7 +97,6 @@ export async function createPatient(input: ReturnType<typeof parsePatientCreate>
   try {
     const row = await db.patient.create({
       data: {
-        patientNumber: `P${randomUUID().replaceAll('-', '')}`,
         name: input.name,
         phone: input.phone,
         birthDate: new Date(`${input.birthDate}T00:00:00Z`),
@@ -135,45 +151,22 @@ export async function getMedicalPatient(id: string, actor: AccountContext) {
 
 export async function updatePatient(id: string, data: ReturnType<typeof parsePatientUpdate>) {
   const existing = await getPatient(id);
-  if (data.name === undefined && data.phone === undefined && data.residentNumber === undefined)
-    return existing;
+  if (data.name === undefined && data.phone === undefined) return existing;
   const db = dbConfig.getPrismaClient();
   const protector = loadResidentNumberProtector();
-  const number = data.residentNumber;
-  const lookup = number ? protector.lookup(number.normalized) : undefined;
-  if (lookup) {
-    const duplicate = await db.patient.findUnique({
-      where: { residentNumberLookup: lookup },
-      select: { id: true },
-    });
-    if (duplicate && duplicate.id !== id)
-      throw new AppError(409, 'RESIDENT_NUMBER_DUPLICATE', '이미 등록된 주민등록번호입니다.');
-  }
-  try {
-    const rows = await db.patient.updateManyAndReturn({
-      where: { id },
-      data: {
-        ...(data.name !== undefined && { name: data.name }),
-        ...(data.phone !== undefined && { phone: data.phone }),
-        ...(number &&
-          lookup && {
-            residentNumberCiphertext: protector.encrypt(number.normalized),
-            residentNumberLookup: lookup,
-            birthDate: new Date(`${number.birthDate}T00:00:00Z`),
-          }),
-      },
-      select: { ...summarySelect, residentNumberCiphertext: true },
-    });
-    const row = rows[0];
-    if (!row) throw new AppError(404, 'NOT_FOUND', '환자를 찾을 수 없습니다.');
-    const residentNumber = protector.decrypt(row.residentNumberCiphertext);
-    return {
-      ...summary(row, true),
-      maskedResidentNumber: `${residentNumber.slice(0, 6)}-${residentNumber[6]}******`,
-    };
-  } catch (error) {
-    if (isResidentNumberConflict(error))
-      throw new AppError(409, 'RESIDENT_NUMBER_DUPLICATE', '이미 등록된 주민등록번호입니다.');
-    throw error;
-  }
+  const rows = await db.patient.updateManyAndReturn({
+    where: { id },
+    data: {
+      ...(data.name !== undefined && { name: data.name }),
+      ...(data.phone !== undefined && { phone: data.phone }),
+    },
+    select: { ...summarySelect, residentNumberCiphertext: true },
+  });
+  const row = rows[0];
+  if (!row) throw new AppError(404, 'NOT_FOUND', '환자를 찾을 수 없습니다.');
+  const residentNumber = protector.decrypt(row.residentNumberCiphertext);
+  return {
+    ...summary(row, true),
+    maskedResidentNumber: `${residentNumber.slice(0, 6)}-${residentNumber[6]}******`,
+  };
 }

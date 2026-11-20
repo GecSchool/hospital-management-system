@@ -1,9 +1,9 @@
-import type { InputHTMLAttributes, SelectHTMLAttributes } from 'react';
+import type { InputHTMLAttributes, Ref, SelectHTMLAttributes } from 'react';
 
 export function Input({
   className = '',
   ...props
-}: InputHTMLAttributes<HTMLInputElement>) {
+}: InputHTMLAttributes<HTMLInputElement> & { ref?: Ref<HTMLInputElement> }) {
   return <input className={`ui-input ${className}`} {...props} />;
 }
 

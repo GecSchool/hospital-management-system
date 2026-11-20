@@ -5,6 +5,8 @@ import { getSessionGeneration } from '../../services/api/sessionGeneration';
 import { apiMode } from '../../services/mode';
 import { useAuth } from '../auth/useAuth';
 import { refreshPatient } from './queries';
+import { PhoneInput } from './PhoneInput';
+import { ResidentNumberInput } from './ResidentNumberInput';
 import {
   staffErrorMessage,
   validPhoneShape,
@@ -29,7 +31,10 @@ export function PatientForm({
   const formId = useId();
   const [name, setName] = useState(patient?.name ?? '');
   const [phone, setPhone] = useState(patient?.phone ?? '');
-  const [residentNumber, setResidentNumber] = useState('');
+  const normalizedPhone = phone.trim().replaceAll('-', '');
+  const [residentFront, setResidentFront] = useState('');
+  const [residentBack, setResidentBack] = useState('');
+  const residentNumber = residentFront + residentBack;
   const [errors, setErrors] = useState<{
     name?: string;
     phone?: string;
@@ -51,7 +56,7 @@ export function PatientForm({
     if (
       patient &&
       name.trim() === patient.name &&
-      phone.trim() === patient.phone
+      normalizedPhone === patient.phone.replaceAll('-', '')
     )
       return;
     const next = {
@@ -80,11 +85,13 @@ export function PatientForm({
       const saved = patient
         ? await service.update(patient.id, {
             ...(name.trim() !== patient.name ? { name: name.trim() } : {}),
-            ...(phone.trim() !== patient.phone ? { phone: phone.trim() } : {}),
+            ...(normalizedPhone !== patient.phone.replaceAll('-', '')
+              ? { phone: normalizedPhone }
+              : {}),
           })
         : await service.create({
             name: name.trim(),
-            phone: phone.trim(),
+            phone: normalizedPhone,
             residentNumber,
           });
       if (!active.current || generation !== getSessionGeneration()) return;
@@ -102,12 +109,15 @@ export function PatientForm({
       lock.current = false;
       if (active.current) {
         setPending(false);
-        setResidentNumber('');
+        setResidentFront('');
+        setResidentBack('');
       }
     }
   }
   const unchanged =
-    patient && patient.name === name.trim() && patient.phone === phone.trim();
+    patient &&
+    patient.name === name.trim() &&
+    patient.phone.replaceAll('-', '') === normalizedPhone;
   return (
     <Modal
       open
@@ -162,52 +172,49 @@ export function PatientForm({
               disabled={pending}
             />
           </FormField>
-          <FormField
-            id={`${formId}-resident`}
-            label="주민등록번호"
-            hint={
-              editing ? '현재 주민등록번호는 변경할 수 없습니다.' : undefined
-            }
-            error={errors.residentNumber}
-          >
-            <Input
+          {editing ? (
+            <div className="ui-form-field staff-resident-readonly">
+              <span className="staff-resident-label">주민등록번호</span>
+              <p>{patient.maskedResidentNumber}</p>
+              <p className="ui-field-hint">
+                현재 주민등록번호는 변경할 수 없습니다.
+              </p>
+            </div>
+          ) : (
+            <FormField
               id={`${formId}-resident`}
-              type="text"
-              className={editing ? undefined : 'staff-resident-input'}
-              inputMode={editing ? undefined : 'numeric'}
-              autoComplete="off"
-              placeholder="주민등록번호를 입력해 주세요"
-              value={patient?.maskedResidentNumber ?? residentNumber}
-              readOnly={editing}
-              required={!editing}
-              onChange={(event) => setResidentNumber(event.target.value)}
-              disabled={pending}
-              aria-describedby={`${formId}-privacy`}
-            />
-          </FormField>
+              label="주민등록번호"
+              error={errors.residentNumber}
+            >
+              <ResidentNumberInput
+                id={`${formId}-resident`}
+                front={residentFront}
+                back={residentBack}
+                disabled={pending}
+                aria-describedby={`${formId}-privacy`}
+                onChange={(front, back) => {
+                  setResidentFront(front);
+                  setResidentBack(back);
+                }}
+              />
+            </FormField>
+          )}
           <FormField id={`${formId}-phone`} label="연락처" error={errors.phone}>
-            <Input
+            <PhoneInput
               id={`${formId}-phone`}
-              type="tel"
               required
-              autoComplete="off"
               placeholder="연락처를 입력해 주세요"
               value={phone}
-              onChange={(event) => setPhone(event.target.value)}
+              onChange={setPhone}
               disabled={pending}
             />
           </FormField>
         </div>
-        {editing ? (
-          <p id={`${formId}-privacy`} className="sr-only">
-            주민등록번호 변경 정책 확정 전에는 이름과 연락처만 수정할 수
-            있습니다.
-          </p>
-        ) : (
+        {!editing && (
           <p id={`${formId}-privacy`} className="staff-privacy">
             {import.meta.env.DEV && apiMode === 'mock'
               ? '개발 Mock: 가상 번호(예: 900101-0000000)만 입력하세요.'
-              : '주민등록번호는 보호를 위해 마스킹하여 표시합니다.'}
+              : '주민등록번호는 저장 후 마스킹하여 표시합니다.'}
           </p>
         )}
         {error && (

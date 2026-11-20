@@ -10,6 +10,7 @@ import { Button, Input, Modal } from '../../components/ui';
 import { ErrorState, Loading } from '../../components/common';
 import {
   businessDate,
+  seoulDate,
   dateLabel,
   dateTimeLabel,
   longDateLabel,
@@ -135,7 +136,7 @@ function FollowUpForm({
       <p>{dateTimeLabel(saved.startsAt)}</p>
       <Link
         className="clinical-link"
-        to={`/doctor/schedule/day?date=${saved.startsAt.slice(0, 10)}`}
+        to={`/doctor/schedule/day?date=${seoulDate(saved.startsAt)}`}
       >
         예약한 날짜 일정 보기
       </Link>

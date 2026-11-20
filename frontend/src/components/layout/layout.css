@@ -82,6 +82,12 @@
   line-height: 24px;
   font-weight: 500;
   text-decoration: none;
+  transition: color var(--motion-fast) var(--motion-ease),
+    background-color var(--motion-fast) var(--motion-ease);
+}
+
+.app-sidebar__link:hover:not(.app-sidebar__link--active) {
+  background-color: var(--color-bg-muted);
 }
 
 .app-sidebar__link--active {

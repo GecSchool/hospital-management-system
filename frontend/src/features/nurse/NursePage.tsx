@@ -2,6 +2,8 @@ import { useId, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useAuth } from '../auth/useAuth';
+import { BirthDateInput } from '../staff/BirthDateInput';
+import { normalizeDate } from '../staff/validation';
 import { staffService } from '../staff/service';
 import type { StaffService } from '../staff/staffService';
 import {
@@ -49,6 +51,7 @@ function NurseSession({ source }: { source: StaffService }) {
   const { receptionId } = useParams();
   const [date, setDate] = useState(businessDate());
   const [draft, setDraft] = useState({ name: '', birthDate: '', doctorId: '' });
+  const [birthDateError, setBirthDateError] = useState('');
   const [criteria, setCriteria] = useState({
     filters: {} as Partial<ReceptionFilters>,
     revision: 0,
@@ -175,10 +178,15 @@ function NurseSession({ source }: { source: StaffService }) {
         className="nurse-filters"
         onSubmit={(e) => {
           e.preventDefault();
+          if (draft.birthDate && !normalizeDate(draft.birthDate)) {
+            setBirthDateError('생년월일을 YYYY.MM.DD 형식으로 확인해 주세요.');
+            return;
+          }
+          setBirthDateError('');
           setCriteria((p) => ({
             filters: {
               name: draft.name.trim() || undefined,
-              birthDate: draft.birthDate || undefined,
+              birthDate: draft.birthDate ? normalizeDate(draft.birthDate) : undefined,
               doctorId: draft.doctorId || undefined,
             },
             revision: p.revision + 1,
@@ -195,11 +203,10 @@ function NurseSession({ source }: { source: StaffService }) {
         </label>
         <label>
           생년월일
-          <Input
-            type="date"
+          <BirthDateInput
             value={draft.birthDate}
-            onChange={(e) =>
-              setDraft((p) => ({ ...p, birthDate: e.target.value }))
+            onChange={(value) =>
+              setDraft((p) => ({ ...p, birthDate: value }))
             }
           />
         </label>
@@ -223,6 +230,7 @@ function NurseSession({ source }: { source: StaffService }) {
           검색
         </Button>
       </form>
+      {birthDateError && <p role="alert">{birthDateError}</p>}
       {doctors.isError && (
         <ErrorState
           message={bookingError(doctors.error)}

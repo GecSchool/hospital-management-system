@@ -133,6 +133,9 @@
 .doctor-scope .doctor-editor td button {
   height: 18px;
 }
+.doctor-scope .doctor-editor td button {
+  transition: background-color var(--motion-fast) var(--motion-ease);
+}
 .doctor-scope .doctor-editor td {
   background: #f5f7f8;
 }

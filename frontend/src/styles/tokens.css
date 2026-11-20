@@ -1,5 +1,8 @@
 /* Figma Foundations 4:43; component geometry from Components 12:6. */
 :root {
+  --motion-fast: 140ms;
+  --motion-standard: 200ms;
+  --motion-ease: ease-out;
   --color-brand-primary: #026894;
   --color-brand-hover: #00516f;
   --color-brand-subtle: #e5f3f8;
@@ -46,4 +49,11 @@
   /* Reviewed source components have no shadow effect. */
   --shadow-none: none;
   --shadow-dialog: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms;
+    --motion-standard: 0ms;
+  }
 }

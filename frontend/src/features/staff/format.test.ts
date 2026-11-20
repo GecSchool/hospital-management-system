@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { businessDate, shiftDate } from './format';
+import { businessDate, shiftDate, seoulDate } from './format';
 import { shiftDate as scheduleShiftDate } from '../doctor/schedule';
 import { mockTimestamp, mockRecordAuthor } from '../../services/mock/utils';
 import { mockAccounts } from '../../services/mock/identity';
@@ -39,4 +39,14 @@ it('snapshots only allowed author fields and retains no credentials', () => {
   expect('token' in snapshot).toBe(false);
   account.department!.name = 'changed outside';
   expect(snapshot.department!.name).toBe('내과');
+});
+
+it.each([
+  ['2026-11-18T14:59:59Z', '2026-11-18'],
+  ['2026-11-18T15:00:00Z', '2026-11-19'],
+  ['2026-12-31T15:00:00Z', '2027-01-01'],
+  ['2026-11-19T00:00:00+09:00', '2026-11-19'],
+  ['2026-11-19', '2026-11-19'],
+])('uses the Seoul calendar date for %s', (timestamp, expected) => {
+  expect(seoulDate(timestamp)).toBe(expected);
 });

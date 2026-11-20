@@ -20,6 +20,8 @@ import { ErrorState, Loading } from '../../components/common';
 import { useAuth } from '../auth/useAuth';
 import { useStaff } from '../staff/useStaff';
 import { MockStaffControls } from '../staff/MockStaffControls';
+import { BirthDateInput } from '../staff/BirthDateInput';
+import { normalizeDate } from '../staff/validation';
 import {
   businessDate,
   dateTimeLabel,
@@ -116,9 +118,13 @@ export function ReceptionListPage() {
             setValidation('조회 날짜를 선택해 주세요.');
             return;
           }
+          if (draft.birthDate && !normalizeDate(draft.birthDate)) {
+            setValidation('생년월일을 YYYY.MM.DD 형식으로 확인해 주세요.');
+            return;
+          }
           setValidation('');
           setCriteria((p) => ({
-            filters: { ...draft, name: draft.name?.trim() || undefined },
+            filters: { ...draft, name: draft.name?.trim() || undefined, birthDate: draft.birthDate ? normalizeDate(draft.birthDate) : undefined },
             revision: p.revision + 1,
           }));
           setParams({ page: '1' });
@@ -143,10 +149,9 @@ export function ReceptionListPage() {
         </label>
         <label>
           생년월일
-          <Input
-            type="date"
+          <BirthDateInput
             value={draft.birthDate ?? ''}
-            onChange={(e) => set('birthDate', e.target.value)}
+            onChange={(value) => set('birthDate', value)}
           />
         </label>
         <label>
