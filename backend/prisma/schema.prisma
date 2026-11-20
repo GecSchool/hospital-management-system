@@ -128,6 +128,7 @@ model Patient {
   receptions               Reception[]
 
   @@index([name, birthDate])
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin, map: "patients_name_trgm_idx")
   @@map("patients")
 }
 
@@ -151,6 +152,8 @@ model Appointment {
   @@unique([doctorAccountId, startsAt], map: "appointments_booked_doctor_time_key", where: { status: "BOOKED" })
   @@index([patientId, startsAt])
   @@index([departmentId, startsAt])
+  @@index([doctorAccountId, startsAt, id], map: "appointments_doctor_time_id_idx")
+  @@index([startsAt, id], map: "appointments_booked_time_id_idx", where: { status: "BOOKED" })
   @@map("appointments")
 }
 
@@ -172,6 +175,7 @@ model Reception {
   @@index([patientId, receivedAt])
   @@index([departmentId, receivedAt])
   @@index([doctorAccountId, receivedAt])
+  @@index([receivedAt, id], map: "receptions_time_id_idx")
   @@map("receptions")
 }
 
