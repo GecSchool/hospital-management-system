@@ -117,6 +117,66 @@ describe('직원 예약 화면', () => {
       ).toContain('가상환자001'),
     );
   });
+  it('prefills patient, department and doctor from a completed visit', async () => {
+    await start('/staff/patients/demo-patient');
+    await screen.findByRole('tab', { name: '진료 이력' });
+    fireEvent.click(screen.getByRole('tab', { name: '진료 이력' }));
+    fireEvent.click(await screen.findByRole('link', { name: '재진 예약' }));
+    await waitFor(() => {
+      expect(
+        (screen.getByLabelText('환자') as HTMLInputElement).value,
+      ).toContain('가상환자001');
+      expect((screen.getByLabelText('진료과') as HTMLSelectElement).value).toBe(
+        'demo-internal',
+      );
+      expect(
+        (screen.getByLabelText('담당 의사') as HTMLSelectElement).value,
+      ).toBe('demo-doctor');
+    });
+  });
+  it('does not retain a doctor unavailable for the selected department', async () => {
+    const service = createMockStaffService({ latencyMs: 0 });
+    service.booking.doctors = vi.fn().mockResolvedValue([]);
+    const slots = vi.spyOn(service.booking, 'slots');
+    await start('/staff/patients/demo-patient', 'STAFF', service);
+    fireEvent.click(await screen.findByRole('tab', { name: '진료 이력' }));
+    fireEvent.click(await screen.findByRole('link', { name: '재진 예약' }));
+    await waitFor(() => expect(service.booking.doctors).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(
+        (screen.getByLabelText('담당 의사') as HTMLSelectElement).value,
+      ).toBe(''),
+    );
+    expect(slots).not.toHaveBeenCalled();
+    expect(
+      screen
+        .getByRole('button', { name: '예약 등록' })
+        .hasAttribute('disabled'),
+    ).toBe(true);
+  });
+  it('clears the follow-up selection when the previous department is unavailable', async () => {
+    const service = createMockStaffService({ latencyMs: 0 });
+    service.booking.departments = vi.fn().mockResolvedValue([]);
+    const slots = vi.spyOn(service.booking, 'slots');
+    await start('/staff/patients/demo-patient', 'STAFF', service);
+    fireEvent.click(await screen.findByRole('tab', { name: '진료 이력' }));
+    fireEvent.click(await screen.findByRole('link', { name: '재진 예약' }));
+    await waitFor(() => expect(service.booking.departments).toHaveBeenCalled());
+    await waitFor(() =>
+      expect((screen.getByLabelText('진료과') as HTMLSelectElement).value).toBe(
+        '',
+      ),
+    );
+    expect(
+      (screen.getByLabelText('담당 의사') as HTMLSelectElement).value,
+    ).toBe('');
+    expect(slots).not.toHaveBeenCalled();
+    expect(
+      screen
+        .getByRole('button', { name: '예약 등록' })
+        .hasAttribute('disabled'),
+    ).toBe(true);
+  });
   it('filters by patient/status and resets URL page without exposing patient name', async () => {
     await start('/staff/appointments?page=2');
     await screen.findByRole('table', { name: '전체 예약' });

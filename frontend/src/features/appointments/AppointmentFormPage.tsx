@@ -1,7 +1,7 @@
 import { StaffContext } from '../staff/StaffContext';
 import type { NurseBooking } from '../nurse/bookingService';
 import type { StaffService } from '../staff/staffService';
-import { useContext, useId, useState } from 'react';
+import { useContext, useEffect, useId, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { Button, Input, Select, Modal, Pagination } from '../../components/ui';
@@ -93,9 +93,19 @@ export function AppointmentForm({
   });
   const selected = patient ?? initial.data;
   const [departmentId, setDepartment] = useState(
-    appointment?.department.id ?? (nurse ? user!.department!.id : ''),
+    appointment?.department.id ??
+      (nurse
+        ? user!.department!.id
+        : typeof location.state?.departmentId === 'string'
+          ? location.state.departmentId
+          : ''),
   );
-  const [doctorId, setDoctor] = useState(appointment?.doctor.id ?? '');
+  const [doctorId, setDoctor] = useState(
+    appointment?.doctor.id ??
+      (!nurse && typeof location.state?.doctorId === 'string'
+        ? location.state.doctorId
+        : ''),
+  );
   const [date, setDate] = useState(
     appointment ? seoulDate(appointment.startsAt) : businessDate(),
   );
@@ -112,10 +122,44 @@ export function AppointmentForm({
     queryFn: ({ signal }) => service.booking.doctors(departmentId, signal),
     enabled: !!departmentId,
   });
+  useEffect(() => {
+    if (
+      !appointment &&
+      !nurse &&
+      departmentId &&
+      departments.isSuccess &&
+      !departments.data.some((d) => d.id === departmentId)
+    ) {
+      setDepartment('');
+      setDoctor('');
+      setTime('');
+    }
+  }, [
+    appointment,
+    nurse,
+    departmentId,
+    departments.isSuccess,
+    departments.data,
+  ]);
+  useEffect(() => {
+    if (
+      !appointment &&
+      doctorId &&
+      doctors.isSuccess &&
+      !doctors.data.some((d) => d.id === doctorId)
+    ) {
+      setDoctor('');
+      setTime('');
+    }
+  }, [appointment, doctorId, doctors.isSuccess, doctors.data]);
+  const doctorAvailable =
+    !!appointment ||
+    (!!departments.data?.some((d) => d.id === departmentId) &&
+      !!doctors.data?.some((d) => d.id === doctorId));
   const availability = useQuery({
     queryKey: [...bookingKey(user!.id), 'availability', doctorId],
     queryFn: ({ signal }) => service.booking.availability(doctorId, signal),
-    enabled: !!doctorId,
+    enabled: !!doctorId && doctorAvailable,
   });
   const slots = useQuery({
     queryKey: [
@@ -127,7 +171,7 @@ export function AppointmentForm({
     ],
     queryFn: ({ signal }) =>
       service.booking.slots(doctorId, date, appointment?.id, signal),
-    enabled: !!doctorId && !!date,
+    enabled: !!doctorId && !!date && doctorAvailable,
   });
   const blocked =
     !!appointment &&
@@ -144,6 +188,7 @@ export function AppointmentForm({
     !selected ||
     !departmentId ||
     !doctorId ||
+    !doctorAvailable ||
     !available ||
     appointment?.startsAt === time;
   const close = () =>
