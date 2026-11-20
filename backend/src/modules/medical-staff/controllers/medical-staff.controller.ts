@@ -1,4 +1,5 @@
 import type { RequestHandler } from 'express';
+import { getCachedDoctors, invalidateDoctorLists } from '../services/doctor-list-cache.js';
 import { AppError } from '../../../common/errors/index.js';
 import type { AccountContext } from '../../../common/middlewares/auth.js';
 import { sendData } from '../../../common/responses/index.js';
@@ -17,14 +18,13 @@ export const changeDepartment: RequestHandler = async (req, res) => {
     typeof body === 'object' && body !== null && 'departmentId' in body
       ? parseDepartmentId(body.departmentId)
       : parseDepartmentId(undefined);
-  sendData(
-    res,
-    await medicalStaffService.changeDepartment(
-      actor.id,
-      parseAccountId(req.params.accountId),
-      departmentId,
-    ),
+  const value = await medicalStaffService.changeDepartment(
+    actor.id,
+    parseAccountId(req.params.accountId),
+    departmentId,
   );
+  if (value.role === 'DOCTOR') await invalidateDoctorLists(req.app.locals.auth?.doctorListCache);
+  sendData(res, value);
 };
 
 export const listMedicalStaff: RequestHandler = async (req, res) => {
@@ -43,5 +43,10 @@ export const listDoctors: RequestHandler = async (req, res) => {
     throw new AppError(403, 'FORBIDDEN', '소속 진료과의 의사만 조회할 수 있습니다.');
   }
   const { activeOnly } = parseDoctorsQuery(req.query);
-  sendData(res, await medicalStaffService.listDoctors(departmentId, activeOnly));
+  const data = await getCachedDoctors(
+    req.app.locals.auth?.doctorListCache,
+    departmentId,
+    activeOnly,
+  );
+  sendData(res, data);
 };
