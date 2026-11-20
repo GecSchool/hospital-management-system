@@ -110,7 +110,11 @@ export function PatientHistory({
                   <Link
                     className="ui-button ui-button--secondary ui-button--compact"
                     to="/staff/appointments/new"
-                    state={{ patientId: id }}
+                    state={{
+                      patientId: id,
+                      departmentId: row.department.id,
+                      doctorId: row.doctor.id,
+                    }}
                   >
                     재진 예약
                   </Link>

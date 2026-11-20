@@ -298,6 +298,7 @@ function ClinicalSession({ source }: { source: StaffService }) {
             base={base}
             selected={selectedRecord}
             path={historyPath}
+            preserveDraft={visit.data?.status === 'IN_PROGRESS'}
             current={
               visit.data?.status === 'IN_PROGRESS'
                 ? {
@@ -317,14 +318,16 @@ function ClinicalSession({ source }: { source: StaffService }) {
                 ? `${selectedHistory ? dateLabel(seoulDate(selectedHistory.completedAt)) : '완료된'} 진료 기록`
                 : '오늘 진료 기록'}
             </h2>
-            {visit.data?.status === 'IN_PROGRESS' && !selectedRecord ? (
+            {visit.data?.status === 'IN_PROGRESS' && (
               <ClinicalForm
+                visible={!selectedRecord}
                 complete={(input) => service.complete(visitId!, input)}
                 onSaved={() =>
                   setNotice('진료 기록을 저장하고 진료를 완료했습니다.')
                 }
               />
-            ) : record.isError ? (
+            )}
+            {visit.data?.status === 'IN_PROGRESS' && !selectedRecord ? null : record.isError ? (
               <ErrorState
                 message={record.error.message}
                 onRetry={() => void record.refetch()}
@@ -364,9 +367,11 @@ function ClinicalSession({ source }: { source: StaffService }) {
 function ClinicalForm({
   complete,
   onSaved,
+  visible,
 }: {
   complete: (input: ClinicalInput) => Promise<unknown>;
   onSaved: () => void;
+  visible: boolean;
 }) {
   const [draft, setDraft] = useState<ClinicalInput>({
     symptoms: '',
@@ -383,6 +388,7 @@ function ClinicalForm({
       />
       <form
         id="clinical-form"
+        hidden={!visible}
         aria-busy={write.pending}
         onSubmit={(e) => {
           e.preventDefault();
@@ -444,8 +450,7 @@ function ClinicalForm({
           </p>
           {Object.values(draft).some((v) => !v.trim()) && (
             <p>
-              입력하지 않은 항목이 있습니다. 현재 명세에는 빈 문자열 제한이
-              없습니다.
+              입력하지 않은 항목이 있습니다. 이대로 진료를 완료하시겠습니까?
             </p>
           )}
           {write.error && <p role="alert">{write.error}</p>}

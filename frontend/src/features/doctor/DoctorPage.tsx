@@ -389,9 +389,8 @@ function Session({ source }: { source: StaffService }) {
                   {(['appointments', 'receptions'] as const).map((kind) => (
                     <section key={kind}>
                       <h2>
-                        {kind === 'appointments'
-                          ? '오늘 예약 환자'
-                          : '오늘 내원 환자'}
+                        {date === businessDate() ? '오늘 ' : ''}
+                        {kind === 'appointments' ? '예약 환자' : '내원 환자'}
                       </h2>
                       {!schedule.data![kind].length && (
                         <p>등록된 환자가 없습니다.</p>

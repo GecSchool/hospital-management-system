@@ -11,6 +11,7 @@ export function ClinicalHistory({
   selected,
   path,
   current,
+  preserveDraft = false,
 }: {
   service: ClinicalService;
   patientId: string;
@@ -18,6 +19,7 @@ export function ClinicalHistory({
   selected?: string | null;
   path: (recordId: string) => string;
   current?: { to: string; label: string };
+  preserveDraft?: boolean;
 }) {
   const location = useLocation();
   const history = useInfiniteQuery({
@@ -62,6 +64,7 @@ export function ClinicalHistory({
                 to={path(h.clinicalRecordId)}
                 state={location.state}
                 className="clinical-history"
+                data-draft-safe-navigation={preserveDraft ? 'true' : undefined}
                 aria-current={
                   selected === h.clinicalRecordId ? 'true' : undefined
                 }
@@ -81,6 +84,7 @@ export function ClinicalHistory({
       {current && (
         <Link
           className="clinical-history"
+          data-draft-safe-navigation={preserveDraft ? 'true' : undefined}
           to={current.to}
           state={location.state}
           aria-current={!selected ? 'true' : undefined}
