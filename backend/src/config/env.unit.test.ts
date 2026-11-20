@@ -17,4 +17,9 @@ describe('서버 설정', () => {
       corsOrigin: 'http://localhost:5173',
     });
   });
+  it('명시된 프록시 홉 수만 허용한다', () => {
+    expect(parseConfig({ TRUST_PROXY_HOPS: '1' }).trustProxyHops).toBe(1);
+    expect(() => parseConfig({ TRUST_PROXY_HOPS: 'true' })).toThrow();
+    expect(() => parseConfig({ TRUST_PROXY_HOPS: '-1' })).toThrow();
+  });
 });

@@ -19,6 +19,7 @@ type AppDependencies = {
 
 export function createApp(settings: AppConfig, dependencies: AppDependencies = {}) {
   const app = express();
+  if (settings.trustProxyHops) app.set('trust proxy', settings.trustProxyHops);
   // 인증 묶음이 없으면 계정 제공자도 없어 보호된 요청을 거부한다.
   app.locals.auth = dependencies.auth;
   app.locals.accountProvider = dependencies.accountProvider ?? dependencies.auth?.accountProvider;

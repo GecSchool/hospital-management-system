@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "https://hospital-api.onetem.co.kr/api/:path*" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
