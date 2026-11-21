@@ -84,3 +84,74 @@ export function scheduleItems(s: DoctorSchedule) {
       })),
   ].sort((a, b) => a.time.localeCompare(b.time));
 }
+
+type ScheduleItem = ReturnType<typeof scheduleItems>[number];
+
+function visitScheduleItem(
+  visit: DoctorSchedule['visits'][number],
+): ScheduleItem {
+  return {
+    id: visit.id,
+    appointmentId: undefined,
+    receptionId: visit.receptionId,
+    visitId: visit.id,
+    patient: visit.patient,
+    time: visit.startedAt,
+    status: visit.status,
+  };
+}
+
+export function dailySchedule(
+  schedule: DoctorSchedule,
+  period: 'past' | 'today' | 'future',
+) {
+  const { appointments, receptions, visits } = schedule;
+  if (period === 'past') {
+    const completed = visits
+      .filter((visit) => visit.status === 'COMPLETED')
+      .map(visitScheduleItem);
+    return {
+      items: completed,
+      lists: [{ title: '진료 완료 환자', rows: completed }],
+    };
+  }
+
+  const booked = scheduleItems({
+    ...schedule,
+    appointments: appointments.filter(
+      (appointment) => appointment.status !== 'CANCELLED',
+    ),
+  }).filter((item) => item.appointmentId);
+  if (period === 'future') {
+    return { items: booked, lists: [{ title: '예약 환자', rows: booked }] };
+  }
+
+  // Reserved visits retain their appointment slot. Walk-ins get a row once a visit starts.
+  const reservedReceptions = new Set([
+    ...appointments.map((appointment) => appointment.receptionId),
+    ...receptions
+      .filter((reception) => reception.appointmentId)
+      .map((reception) => reception.id),
+  ]);
+  const walkInVisits = visits
+    .filter((visit) => !reservedReceptions.has(visit.receptionId))
+    .map(visitScheduleItem);
+  const checkedIn: ScheduleItem[] = receptions.map((reception) => ({
+    id: reception.id,
+    appointmentId: undefined,
+    receptionId: reception.id,
+    visitId: reception.visitId,
+    patient: reception.patient,
+    time: reception.receivedAt,
+    status: reception.displayStatus,
+  }));
+  return {
+    items: [...booked, ...walkInVisits].sort(
+      (a, b) => Date.parse(a.time) - Date.parse(b.time),
+    ),
+    lists: [
+      { title: '오늘 예약 환자', rows: booked },
+      { title: '오늘 내원 환자', rows: checkedIn },
+    ],
+  };
+}

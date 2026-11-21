@@ -244,11 +244,9 @@ it('renders own weekly/day schedule, shifts dates, requests leave once and refre
   const s = await ui('/doctor/schedule?date=2026-11-10');
   await screen.findByRole('table', { name: '주간 시간표' });
   fireEvent.click(screen.getByRole('link', { name: '일간' }));
-  await screen.findByRole('table', { name: '오늘의 시간표' });
+  await screen.findByRole('table', { name: '진료 시간표' });
   fireEvent.click(screen.getByRole('button', { name: '다음 기간' }));
-  expect((screen.getByLabelText('선택 날짜') as HTMLInputElement).value).toBe(
-    '2026-11-11',
-  );
+  expect(screen.getByRole('button', { name: /선택 날짜 2026년 11월 11일/ })).toBeTruthy();
   fireEvent.click(screen.getByRole('button', { name: '휴진 신청' }));
   const modal = await screen.findByRole('dialog');
   const b = within(modal).getByRole('button', { name: '휴진 등록' });

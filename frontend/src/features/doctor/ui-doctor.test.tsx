@@ -184,14 +184,79 @@ it('shows a user-facing confirmation for incomplete clinical fields', async () =
   expect(await screen.findByText('입력하지 않은 항목이 있습니다. 이대로 진료를 완료하시겠습니까?')).toBeTruthy();
   expect(screen.queryByText(/현재 명세에는/)).toBeNull();
 });
-it.each([
-  ['2026-11-09', '오늘 예약 환자', '오늘 내원 환자'],
-  ['2026-11-10', '예약 환자', '내원 환자'],
-  ['2026-11-08', '예약 환자', '내원 환자'],
-])('labels the daily lists for %s', async (date, appointments, receptions) => {
-  await mount(createMockStaffService({ latencyMs: 0 }), `/doctor/schedule/day?date=${date}`);
-  expect(await screen.findByRole('heading', { name: appointments })).toBeTruthy();
-  expect(screen.getByRole('heading', { name: receptions })).toBeTruthy();
+it('switches between today, future bookings and completed visits using the calendar', async () => {
+  const { service, patient, records } = await fixture();
+  const walkIn = await service.intake.create({
+    patientId: 'demo-patient-4',
+    departmentId: 'demo-internal',
+    doctorId: doctor.doctorId,
+  });
+  await mount(service, '/doctor/schedule/day?date=2026-11-09');
+  const today = await screen.findByRole('table', { name: '오늘의 시간표' });
+  expect(within(today).getByRole('link', { name: `${patient.name} 예약` })).toBeTruthy();
+  expect(within(today).queryByText(walkIn.patient.name)).toBeNull();
+  const arrivals = screen.getByRole('region', { name: '오늘 내원 환자' });
+  expect(within(arrivals).getByText(walkIn.patient.name)).toBeTruthy();
+
+  fireEvent.click(screen.getByRole('button', { name: '다음 기간' }));
+  expect(await screen.findByRole('heading', { name: '예약 환자' })).toBeTruthy();
+  expect(screen.queryByRole('heading', { name: '내원 환자' })).toBeNull();
+  expect(screen.getByRole('button', { name: '휴진 신청' })).toBeTruthy();
+
+  fireEvent.click(screen.getByRole('button', { name: /선택 날짜/ }));
+  const calendar = screen.getByRole('group', { name: '달력' });
+  fireEvent.click(within(calendar).getByRole('button', { name: /2026년 11월 6일/ }));
+  const completed = await screen.findByRole('region', { name: '진료 완료 환자' });
+  expect(within(completed).getByText('12:00')).toBeTruthy();
+  expect(within(completed).getByRole('link', { name: '보기 ›' }).getAttribute('href')).toBe(`/doctor/visits/${records[1].visit.id}`);
+  expect(screen.getByRole('table', { name: '진료 시간표' })).toBeTruthy();
+  expect(screen.queryByRole('heading', { name: '예약 환자' })).toBeNull();
+  expect(screen.queryByRole('button', { name: '휴진 신청' })).toBeNull();
+});
+it('shows three patients in the same daily slot and keeps waiting patients in arrivals', async () => {
+  const f = await fixture();
+  vi.setSystemTime(new Date('2026-11-09T13:58:00+09:00'));
+  const started = await f.service.intake.create({
+    patientId: 'demo-patient-3',
+    departmentId: 'demo-internal',
+    doctorId: doctor.doctorId,
+  });
+  await f.nurse.call(started.id);
+  vi.setSystemTime(new Date('2026-11-09T14:04:00+09:00'));
+  const visit = await f.nurse.enter(started.id);
+  vi.setSystemTime(new Date('2026-11-09T14:08:00+09:00'));
+  await f.clinical.complete(visit.id, { symptoms: '증상', diagnosis: '진단', opinion: '소견' });
+  const nextPatient = await f.service.create({
+    name: '세 번째 가상 환자',
+    residentNumber: '900102-0000000',
+    phone: '010-0000-9998',
+  });
+  const next = await f.service.intake.create({
+    patientId: nextPatient.id,
+    departmentId: 'demo-internal',
+    doctorId: doctor.doctorId,
+  });
+  await f.nurse.call(next.id);
+  vi.setSystemTime(new Date('2026-11-09T14:12:00+09:00'));
+  await f.nurse.enter(next.id);
+  const waiting = await f.service.intake.create({
+    patientId: 'demo-patient-4',
+    departmentId: 'demo-internal',
+    doctorId: doctor.doctorId,
+  });
+
+  await mount(f.service, '/doctor/schedule/day?date=2026-11-09');
+  const grid = await screen.findByRole('table', { name: '오늘의 시간표' });
+  const row = within(grid).getByRole('row', { name: /^14:00/ });
+  expect(within(row).getAllByRole('link')).toHaveLength(3);
+  expect(within(row).getByRole('link', { name: `${f.patient.name} 예약` })).toBeTruthy();
+  const visitLink = within(row).getByRole('link', { name: `${started.patient.name} 진료 완료` });
+  expect(visitLink.getAttribute('href')).toBe(`/doctor/visits/${visit.id}`);
+  expect(within(visitLink).getByText('14:04')).toBeTruthy();
+  const nextLink = within(row).getByRole('link', { name: `${nextPatient.name} 진료 중` });
+  expect(within(nextLink).getByText('14:12')).toBeTruthy();
+  expect(within(grid).queryByText(waiting.patient.name)).toBeNull();
+  expect(within(screen.getByRole('region', { name: '오늘 내원 환자' })).getByText(waiting.patient.name)).toBeTruthy();
 });
 it('guards correction cancel/close and leaves immutable versions intact', async () => {
   const f = await fixture();
@@ -253,6 +318,8 @@ it('lets the user select among patients sharing a weekly cell without losing res
   const trigger = await screen.findByRole('button', {
     name: '월 12:00 환자 2명 선택',
   });
+  expect(within(trigger).getByText('외 1명')).toBeTruthy();
+  expect(within(trigger).queryByText(rs[1].patient.name)).toBeNull();
   fireEvent.click(trigger);
   let dialog = await screen.findByRole('dialog', {
     name: '환자를 선택해 주세요',
