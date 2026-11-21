@@ -13,18 +13,25 @@
 .appointment-fields h2 {
   margin-bottom: 10px;
 }
-.appointment-fields label {
+.appointment-fields label,
+.appointment-readonly-field {
   display: flex;
   flex-direction: column;
   gap: 8px;
   font: var(--font-label-m);
 }
+.appointment-readonly-field {
+  margin: 0;
+}
+.appointment-readonly-field dd {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  margin: 0;
+  font: var(--font-body-m);
+}
 .appointment-fields .ui-input {
   width: 100%;
-}
-.appointment-fields > button {
-  align-self: flex-end;
-  margin-top: -22px;
 }
 .appointment-date {
   margin: 72px 0 30px;
@@ -176,15 +183,6 @@
 }
 .ui-modal.appointment-cancel {
   width: min(520px, calc(100% - 32px));
-}
-.appointment-patient-results {
-  list-style: none;
-  padding: 0;
-  display: grid;
-  gap: 8px;
-}
-.appointment-patient-results button {
-  width: 100%;
 }
 @media (max-width: 1250px) {
   .appointment-columns {
