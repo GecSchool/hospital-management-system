@@ -10,7 +10,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { AppProviders } from '../../app/providers/AppProviders';
 import { createQueryClient } from '../../app/providers/queryClient';
 import { AppRoutes } from '../../app/router/routes';
-import { createMockAuthService } from '../../services/mock/auth';
+import { createMockAuthService, mockAccounts } from '../../services/mock/auth';
 import { createMockStaffService } from '../../services/mock/staff';
 import type { Role } from '../../types/auth';
 vi.mock('../../services/mode', () => ({ apiMode: 'mock' }));
@@ -62,6 +62,49 @@ async function seed(service = createMockStaffService({ latencyMs: 0 })) {
   return { service, a };
 }
 describe('직원 예약 화면', () => {
+  it('keeps the default business hours and adds only configured times outside them', async ({
+    onTestFinished,
+  }) => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-09T12:00:00+09:00'));
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
+    const service = createMockStaffService({ latencyMs: 0 });
+    await service
+      .doctor(async () => mockAccounts.DOCTOR)
+      .save([
+        { dayOfWeek: 1, startTime: '09:00', endTime: '10:00' },
+        { dayOfWeek: 1, startTime: '21:20', endTime: '22:20' },
+      ]);
+    await service.booking.create({
+      patientId: 'demo-patient',
+      doctorId: 'demo-doctor',
+      departmentId: 'demo-internal',
+      startsAt: `${future}T09:20:00+09:00`,
+    });
+    await start('/staff/appointments/new', 'STAFF', service);
+    await select();
+
+    const grid = within(screen.getByRole('group', { name: '예약 시간' }));
+    expect(grid.getAllByRole('button')).toHaveLength(30);
+    expect(
+      grid
+        .getByRole('button', { name: '09:20 · 이미 예약됨' })
+        .hasAttribute('disabled'),
+    ).toBe(true);
+    expect(
+      grid
+        .getByRole('button', { name: '17:40 · 진료 가능 시간 외' })
+        .hasAttribute('disabled'),
+    ).toBe(true);
+    expect(
+      grid.getByRole('button', { name: '21:20' }).hasAttribute('disabled'),
+    ).toBe(false);
+    expect(
+      grid.queryByRole('button', { name: /^(00:00|18:00|22:20)/ }),
+    ).toBeNull();
+  });
   it('selects a patient and doctor, clears time on date/department changes, and prevents incomplete submission', async () => {
     await start();
     expect(

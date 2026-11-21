@@ -24,6 +24,11 @@ import {
   useBookingWrite,
 } from './queries';
 import { MockStaffControls } from '../staff/MockStaffControls';
+import {
+  AppointmentSlotGrid,
+  sameAppointmentTime,
+  visibleAppointmentSlots,
+} from './AppointmentSlotGrid';
 import './appointments.css';
 export function AppointmentFormPage() {
   const { appointmentId } = useParams();
@@ -178,8 +183,14 @@ export function AppointmentForm({
     (appointment.status === 'CANCELLED' ||
       !!appointment.receptionId ||
       appointment.displayStatus !== 'BOOKED');
+  const visibleSlots = visibleAppointmentSlots(
+    slots.data,
+    availability.data?.weeklySlots,
+  );
   const available =
-    slots.data?.slots.some((s) => s.startsAt === time && s.available) &&
+    visibleSlots.some(
+      (s) => sameAppointmentTime(s.startsAt, time) && s.available,
+    ) &&
     !slots.isFetching &&
     !slots.isError;
   const disabled =
@@ -190,7 +201,7 @@ export function AppointmentForm({
     !doctorId ||
     !doctorAvailable ||
     !available ||
-    appointment?.startsAt === time;
+    (!!appointment && sameAppointmentTime(appointment.startsAt, time));
   const close = () =>
     nurse
       ? navigate('/nurse/appointments')
@@ -348,29 +359,14 @@ export function AppointmentForm({
                     void slots.refetch();
                   }}
                 />
-              ) : slots.data.slots.length === 0 ? (
-                <p>예약 가능한 시간대가 없습니다.</p>
               ) : (
-                <div className="appointment-slot-grid" aria-label="예약 시간">
-                  {slots.data.slots.map((s) => (
-                    <button
-                      type="button"
-                      key={s.startsAt}
-                      aria-pressed={time === s.startsAt}
-                      disabled={
-                        !s.available ||
-                        blocked ||
-                        write.pending ||
-                        slots.isFetching
-                      }
-                      title={s.available ? '예약 가능' : slotReason(s.reason)}
-                      aria-label={`${s.startsAt.slice(11, 16)}${s.available ? '' : ` · ${slotReason(s.reason)}`}`}
-                      onClick={() => setTime(s.startsAt)}
-                    >
-                      {s.startsAt.slice(11, 16)}
-                    </button>
-                  ))}
-                </div>
+                <AppointmentSlotGrid
+                  label="예약 시간"
+                  slots={visibleSlots}
+                  value={time}
+                  onSelect={setTime}
+                  disabled={blocked || write.pending || slots.isFetching}
+                />
               )}
               {slots.isFetching && !slots.isPending && (
                 <p role="status">시간대를 갱신하고 있습니다.</p>
@@ -384,7 +380,7 @@ export function AppointmentForm({
                   예약 불가 사유:{' '}
                   {[
                     ...new Set(
-                      slots.data.slots
+                      visibleSlots
                         .filter((s) => !s.available)
                         .map((s) => slotReason(s.reason)),
                     ),
