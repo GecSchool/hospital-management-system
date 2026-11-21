@@ -304,14 +304,27 @@ async function ui(path?: string) {
   );
   return { ...f, client };
 }
-it('renders own patient list and restricts filter results', async () => {
+it('shows the date and status filters above the patient list and updates the results', async () => {
   await ui('/doctor/patients?date=2026-11-09');
   await screen.findByRole('table', { name: '담당 환자' });
+  expect(screen.getByRole('heading', { name: '환자 진료' })).toBeTruthy();
+  expect(screen.queryByRole('heading', { name: '담당 환자' })).toBeNull();
   expect(screen.getByText('가상진료환자')).toBeTruthy();
-  fireEvent.change(screen.getByLabelText('진행 상태'), {
+  const filters = within(screen.getByRole('group', { name: '조회 조건' }));
+  fireEvent.change(filters.getByRole('combobox', { name: '진행 상태' }), {
     target: { value: 'COMPLETED' },
   });
   await screen.findByText('조건에 맞는 환자가 없습니다.');
+  fireEvent.change(filters.getByRole('combobox', { name: '진행 상태' }), {
+    target: { value: '' },
+  });
+  await screen.findByText('가상진료환자');
+
+  fireEvent.click(filters.getByRole('button', { name: /선택 날짜.*11월 9일/ }));
+  const calendar = within(filters.getByRole('group', { name: '달력' }));
+  fireEvent.click(calendar.getByRole('button', { name: /11월 8일/ }));
+  await screen.findByText('조건에 맞는 환자가 없습니다.');
+  expect(filters.getByRole('button', { name: /선택 날짜.*11월 8일/ })).toBeTruthy();
 });
 it('keeps draft on failure then completes once, refreshes private cache and shows readonly original/nursing', async () => {
   const { s, c, v, client, r } = await ui();
