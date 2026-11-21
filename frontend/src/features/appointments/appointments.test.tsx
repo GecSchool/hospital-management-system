@@ -10,13 +10,13 @@ import { describe, expect, it, vi } from 'vitest';
 import { AppProviders } from '../../app/providers/AppProviders';
 import { createQueryClient } from '../../app/providers/queryClient';
 import { AppRoutes } from '../../app/router/routes';
-import { createMockAuthService } from '../../services/mock/auth';
+import { createMockAuthService, mockAccounts } from '../../services/mock/auth';
 import { createMockStaffService } from '../../services/mock/staff';
 import type { Role } from '../../types/auth';
 vi.mock('../../services/mode', () => ({ apiMode: 'mock' }));
 const future = '2099-01-05';
 async function start(
-  path = '/staff/appointments/new',
+  path = '/staff/patients/demo-patient',
   role: Role = 'STAFF',
   service = createMockStaffService({ latencyMs: 0 }),
 ) {
@@ -32,14 +32,13 @@ async function start(
   );
   return service;
 }
+async function startBooking(service?: ReturnType<typeof createMockStaffService>) {
+  const source = await start(undefined, 'STAFF', service);
+  fireEvent.click(await screen.findByRole('link', { name: '예약 등록' }));
+  return source;
+}
 async function select() {
-  fireEvent.click(await screen.findByRole('button', { name: '환자 찾기' }));
-  const dialog = screen.getByRole('dialog', { name: '환자 선택' });
-  fireEvent.click(
-    await within(dialog).findByRole('button', {
-      name: '가상환자001 · P0001042',
-    }),
-  );
+  await screen.findByRole('option', { name: '내과' });
   fireEvent.change(screen.getByLabelText('진료과'), {
     target: { value: 'demo-internal' },
   });
@@ -62,8 +61,51 @@ async function seed(service = createMockStaffService({ latencyMs: 0 })) {
   return { service, a };
 }
 describe('직원 예약 화면', () => {
+  it('keeps the default business hours and adds only configured times outside them', async ({
+    onTestFinished,
+  }) => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-09T12:00:00+09:00'));
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
+    const service = createMockStaffService({ latencyMs: 0 });
+    await service
+      .doctor(async () => mockAccounts.DOCTOR)
+      .save([
+        { dayOfWeek: 1, startTime: '09:00', endTime: '10:00' },
+        { dayOfWeek: 1, startTime: '21:20', endTime: '22:20' },
+      ]);
+    await service.booking.create({
+      patientId: 'demo-patient',
+      doctorId: 'demo-doctor',
+      departmentId: 'demo-internal',
+      startsAt: `${future}T09:20:00+09:00`,
+    });
+    await startBooking(service);
+    await select();
+
+    const grid = within(screen.getByRole('group', { name: '예약 시간' }));
+    expect(grid.getAllByRole('button')).toHaveLength(30);
+    expect(
+      grid
+        .getByRole('button', { name: '09:20 · 이미 예약됨' })
+        .hasAttribute('disabled'),
+    ).toBe(true);
+    expect(
+      grid
+        .getByRole('button', { name: '17:40 · 진료 가능 시간 외' })
+        .hasAttribute('disabled'),
+    ).toBe(true);
+    expect(
+      grid.getByRole('button', { name: '21:20' }).hasAttribute('disabled'),
+    ).toBe(false);
+    expect(
+      grid.queryByRole('button', { name: /^(00:00|18:00|22:20)/ }),
+    ).toBeNull();
+  });
   it('selects a patient and doctor, clears time on date/department changes, and prevents incomplete submission', async () => {
-    await start();
+    await startBooking();
     expect(
       (await screen.findByRole('button', { name: '예약 등록' })).hasAttribute(
         'disabled',
@@ -93,7 +135,7 @@ describe('직원 예약 화면', () => {
     expect(screen.queryByRole('button', { name: '09:20' })).toBeNull();
   });
   it('registers only after confirmation, locks duplicate submissions and updates history', async () => {
-    const service = await start();
+    const service = await startBooking();
     const create = vi.spyOn(service.booking, 'create');
     fireEvent.click(await select());
     fireEvent.click(screen.getByRole('button', { name: '예약 등록' }));
@@ -108,24 +150,22 @@ describe('직원 예약 화면', () => {
       ).data.some((x) => x.startsAt === `${future}T09:00:00+09:00`),
     ).toBe(true);
   });
-  it('preselects the patient when entered from detail', async () => {
-    await start('/staff/patients/demo-patient');
+  it('sends a direct booking link to the patient list and uses the selected patient in the form', async () => {
+    await start('/staff/appointments/new');
+    await screen.findByRole('heading', { name: '환자 목록' });
+    fireEvent.click(await screen.findByRole('link', { name: '가상환자001 상세 보기' }));
     fireEvent.click(await screen.findByRole('link', { name: '예약 등록' }));
-    await waitFor(() =>
-      expect(
-        (screen.getByLabelText('환자') as HTMLInputElement).value,
-      ).toContain('가상환자001'),
-    );
+    await screen.findByText('가상환자001 · P0001042');
+    expect(screen.queryByRole('textbox', { name: '환자' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '환자 찾기' })).toBeNull();
   });
   it('prefills patient, department and doctor from a completed visit', async () => {
     await start('/staff/patients/demo-patient');
     await screen.findByRole('tab', { name: '진료 이력' });
     fireEvent.click(screen.getByRole('tab', { name: '진료 이력' }));
     fireEvent.click(await screen.findByRole('link', { name: '재진 예약' }));
+    await screen.findByText('가상환자001 · P0001042');
     await waitFor(() => {
-      expect(
-        (screen.getByLabelText('환자') as HTMLInputElement).value,
-      ).toContain('가상환자001');
       expect((screen.getByLabelText('진료과') as HTMLSelectElement).value).toBe(
         'demo-internal',
       );
@@ -265,7 +305,7 @@ describe('직원 예약 화면', () => {
     await screen.findByRole('table');
   });
   it('reports a slot conflict at save time', async () => {
-    const service = await start();
+    const service = await startBooking();
     fireEvent.click(await select());
     await service.booking.create({
       patientId: 'demo-patient-2',

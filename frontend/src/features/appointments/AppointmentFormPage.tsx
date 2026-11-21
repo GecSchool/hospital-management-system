@@ -1,10 +1,10 @@
 import { StaffContext } from '../staff/StaffContext';
 import type { NurseBooking } from '../nurse/bookingService';
 import type { StaffService } from '../staff/staffService';
-import { useContext, useEffect, useId, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useLocation, useNavigate, useParams } from 'react-router';
-import { Button, Input, Select, Modal, Pagination } from '../../components/ui';
+import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router';
+import { Button, Input, Select, Modal } from '../../components/ui';
 import { ErrorState, Loading } from '../../components/common';
 import { PageHeader } from '../../components/layout';
 import { useAuth } from '../auth/useAuth';
@@ -16,7 +16,7 @@ import {
   longDateLabel,
   seoulDate,
 } from '../staff/format';
-import type { StaffAppointment, StaffPatientSummary } from '../staff/types';
+import type { StaffAppointment } from '../staff/types';
 import {
   bookingKey,
   bookingError,
@@ -24,9 +24,15 @@ import {
   useBookingWrite,
 } from './queries';
 import { MockStaffControls } from '../staff/MockStaffControls';
+import {
+  AppointmentSlotGrid,
+  sameAppointmentTime,
+  visibleAppointmentSlots,
+} from './AppointmentSlotGrid';
 import './appointments.css';
 export function AppointmentFormPage() {
   const { appointmentId } = useParams();
+  const { state } = useLocation();
   const { service } = useStaff();
   const { user } = useAuth();
   const query = useQuery({
@@ -34,6 +40,11 @@ export function AppointmentFormPage() {
     queryFn: ({ signal }) => service.booking.detail(appointmentId!, signal),
     enabled: !!appointmentId,
   });
+  if (
+    !appointmentId &&
+    (typeof state?.patientId !== 'string' || !state.patientId)
+  )
+    return <Navigate to="/staff/patients" replace />;
   if (appointmentId && query.isPending) return <Loading />;
   if (appointmentId && query.isError)
     return (
@@ -46,7 +57,7 @@ export function AppointmentFormPage() {
       </>
     );
   return (
-    <AppointmentForm key={appointmentId ?? 'new'} appointment={query.data} />
+    <AppointmentForm key={appointmentId ?? state.patientId} appointment={query.data} />
   );
 }
 export function AppointmentForm({
@@ -58,7 +69,7 @@ export function AppointmentForm({
 }) {
   const context = useContext(StaffContext);
   const service:
-    Pick<StaffService, 'booking' | 'list' | 'detail'> | NurseBooking =
+    Pick<StaffService, 'booking' | 'detail'> | NurseBooking =
     source ?? context!.service;
   const nurse = !!source;
   const home = nurse ? '/nurse' : '/staff';
@@ -66,23 +77,9 @@ export function AppointmentForm({
   const location = useLocation();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const scope = useId();
   const write = useBookingWrite();
   const selectedId: unknown =
     useParams().patientId ?? location.state?.patientId;
-  const [patient, setPatient] = useState<
-    | StaffPatientSummary
-    | import('../nurse/bookingService').NursePatient
-    | undefined
-  >(
-    () =>
-      appointment?.patient ??
-      (nurse && typeof selectedId === 'string'
-        ? queryClient.getQueryData<
-            import('../nurse/bookingService').NursePatient
-          >(staffKeys.detail(user!.id, selectedId))
-        : undefined),
-  );
   const initial = useQuery({
     queryKey: staffKeys.detail(
       user!.id,
@@ -91,7 +88,13 @@ export function AppointmentForm({
     queryFn: ({ signal }) => service.detail(selectedId as string, signal),
     enabled: !nurse && !appointment && typeof selectedId === 'string',
   });
-  const selected = patient ?? initial.data;
+  const selected =
+    appointment?.patient ??
+    (nurse && typeof selectedId === 'string'
+      ? queryClient.getQueryData<import('../nurse/bookingService').NursePatient>(
+          staffKeys.detail(user!.id, selectedId),
+        )
+      : initial.data);
   const [departmentId, setDepartment] = useState(
     appointment?.department.id ??
       (nurse
@@ -110,7 +113,6 @@ export function AppointmentForm({
     appointment ? seoulDate(appointment.startsAt) : businessDate(),
   );
   const [time, setTime] = useState(appointment?.startsAt ?? '');
-  const [finding, setFinding] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [validation, setValidation] = useState('');
   const departments = useQuery({
@@ -178,8 +180,14 @@ export function AppointmentForm({
     (appointment.status === 'CANCELLED' ||
       !!appointment.receptionId ||
       appointment.displayStatus !== 'BOOKED');
+  const visibleSlots = visibleAppointmentSlots(
+    slots.data,
+    availability.data?.weeklySlots,
+  );
   const available =
-    slots.data?.slots.some((s) => s.startsAt === time && s.available) &&
+    visibleSlots.some(
+      (s) => sameAppointmentTime(s.startsAt, time) && s.available,
+    ) &&
     !slots.isFetching &&
     !slots.isError;
   const disabled =
@@ -190,7 +198,7 @@ export function AppointmentForm({
     !doctorId ||
     !doctorAvailable ||
     !available ||
-    appointment?.startsAt === time;
+    (!!appointment && sameAppointmentTime(appointment.startsAt, time));
   const close = () =>
     nurse
       ? navigate('/nurse/appointments')
@@ -199,7 +207,7 @@ export function AppointmentForm({
             ? `/staff/appointments/${encodeURIComponent(appointment.id)}`
             : selected
               ? `/staff/patients/${encodeURIComponent(selected.id)}`
-              : `${home}/appointments/new`,
+              : '/staff/patients',
         );
   function submit() {
     if (disabled) {
@@ -214,13 +222,26 @@ export function AppointmentForm({
     appointment?.department;
   const doctor =
     doctors.data?.find((d) => d.id === doctorId) ?? appointment?.doctor;
+  const patientIdentifier = nurse
+    ? selected?.birthDate
+    : selected && 'patientNumber' in selected
+      ? selected.patientNumber
+      : undefined;
+  const patientText = [selected?.name, patientIdentifier]
+    .filter(Boolean)
+    .join(' · ');
   return (
     <section
       className="staff-page appointment-form"
       data-figma-node={nurse ? '100:399' : appointment ? '68:1656' : '26:436'}
     >
       <nav className="staff-breadcrumb">
-        <Link to={`${home}/appointments`}>진료 예약</Link> /{' '}
+        {!appointment && !nurse ? (
+          <Link to="/staff/patients">환자 관리</Link>
+        ) : (
+          <Link to={`${home}/appointments`}>진료 예약</Link>
+        )}{' '}
+        /{' '}
         {appointment ? '예약 시간 변경' : '예약 등록'}
       </nav>
       <PageHeader
@@ -228,7 +249,9 @@ export function AppointmentForm({
         description={
           appointment
             ? `기존 예약 · ${dateTimeLabel(appointment.startsAt)}`
-            : '진료과, 담당 의사와 예약 시간을 선택합니다.'
+            : nurse
+              ? '담당 의사와 예약 시간을 선택합니다.'
+              : '진료과, 담당 의사와 예약 시간을 선택합니다.'
         }
       />
       {blocked && (
@@ -237,28 +260,10 @@ export function AppointmentForm({
       <div className="appointment-columns">
         <section className="appointment-fields">
           <h2>예약 정보</h2>
-          <label>
-            환자
-            <Input
-              readOnly
-              value={
-                selected
-                  ? `${selected.name} · ${nurse ? selected.birthDate : 'patientNumber' in selected ? String(selected.patientNumber) : ''}`
-                  : ''
-              }
-              placeholder="환자를 선택해 주세요."
-            />
-          </label>
-          {!appointment && !nurse && (
-            <Button
-              variant="secondary"
-              size="compact"
-              onClick={() => setFinding(true)}
-              disabled={write.pending}
-            >
-              환자 찾기
-            </Button>
-          )}
+          <dl className="appointment-readonly-field">
+            <dt>환자</dt>
+            <dd>{patientText || '—'}</dd>
+          </dl>
           {initial.isError && (
             <ErrorState
               message={bookingError(initial.error)}
@@ -271,25 +276,32 @@ export function AppointmentForm({
               <Link to="/nurse/appointments/new">환자 검색</Link>
             </p>
           )}
-          <label>
-            진료과
-            <Select
-              value={departmentId}
-              disabled={nurse || !!appointment || write.pending}
-              onChange={(e) => {
-                setDepartment(e.target.value);
-                setDoctor('');
-                setTime('');
-              }}
-            >
-              <option value="">진료과 선택</option>
-              {departments.data?.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.name}
-                </option>
-              ))}
-            </Select>
-          </label>
+          {nurse ? (
+            <dl className="appointment-readonly-field">
+              <dt>진료과</dt>
+              <dd>{department?.name ?? user!.department?.name ?? '—'}</dd>
+            </dl>
+          ) : (
+            <label>
+              진료과
+              <Select
+                value={departmentId}
+                disabled={!!appointment || write.pending}
+                onChange={(e) => {
+                  setDepartment(e.target.value);
+                  setDoctor('');
+                  setTime('');
+                }}
+              >
+                <option value="">진료과 선택</option>
+                {departments.data?.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name}
+                  </option>
+                ))}
+              </Select>
+            </label>
+          )}
           <label>
             담당 의사
             <Select
@@ -348,29 +360,14 @@ export function AppointmentForm({
                     void slots.refetch();
                   }}
                 />
-              ) : slots.data.slots.length === 0 ? (
-                <p>예약 가능한 시간대가 없습니다.</p>
               ) : (
-                <div className="appointment-slot-grid" aria-label="예약 시간">
-                  {slots.data.slots.map((s) => (
-                    <button
-                      type="button"
-                      key={s.startsAt}
-                      aria-pressed={time === s.startsAt}
-                      disabled={
-                        !s.available ||
-                        blocked ||
-                        write.pending ||
-                        slots.isFetching
-                      }
-                      title={s.available ? '예약 가능' : slotReason(s.reason)}
-                      aria-label={`${s.startsAt.slice(11, 16)}${s.available ? '' : ` · ${slotReason(s.reason)}`}`}
-                      onClick={() => setTime(s.startsAt)}
-                    >
-                      {s.startsAt.slice(11, 16)}
-                    </button>
-                  ))}
-                </div>
+                <AppointmentSlotGrid
+                  label="예약 시간"
+                  slots={visibleSlots}
+                  value={time}
+                  onSelect={setTime}
+                  disabled={blocked || write.pending || slots.isFetching}
+                />
               )}
               {slots.isFetching && !slots.isPending && (
                 <p role="status">시간대를 갱신하고 있습니다.</p>
@@ -384,7 +381,7 @@ export function AppointmentForm({
                   예약 불가 사유:{' '}
                   {[
                     ...new Set(
-                      slots.data.slots
+                      visibleSlots
                         .filter((s) => !s.available)
                         .map((s) => slotReason(s.reason)),
                     ),
@@ -411,16 +408,6 @@ export function AppointmentForm({
           {appointment ? '변경 저장' : '예약 등록'}
         </Button>
       </footer>
-      {finding && (
-        <PatientPicker
-          scope={scope}
-          onClose={() => setFinding(false)}
-          onSelect={(p) => {
-            setPatient(p);
-            setFinding(false);
-          }}
-        />
-      )}
       {confirm && (
         <Modal
           open
@@ -491,83 +478,5 @@ export function AppointmentForm({
       )}
       {!nurse && <MockStaffControls />}
     </section>
-  );
-}
-function PatientPicker({
-  scope,
-  onClose,
-  onSelect,
-}: {
-  scope: string;
-  onClose(): void;
-  onSelect(p: StaffPatientSummary): void;
-}) {
-  const { service } = useStaff();
-  const { user } = useAuth();
-  const [draft, setDraft] = useState('');
-  const [search, setSearch] = useState({ name: '', revision: 0 });
-  const [page, setPage] = useState(1);
-  const query = useQuery({
-    queryKey: [
-      ...staffKeys.patients(user!.id),
-      'booking-picker',
-      scope,
-      search.revision,
-      page,
-    ],
-    queryFn: ({ signal }) =>
-      service.list({ name: search.name }, { page, size: 5 }, signal),
-  });
-  return (
-    <Modal
-      open
-      title="환자 선택"
-      onClose={onClose}
-      footer={
-        <Button variant="secondary" onClick={onClose}>
-          닫기
-        </Button>
-      }
-    >
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          setSearch((p) => ({ name: draft.trim(), revision: p.revision + 1 }));
-          setPage(1);
-        }}
-      >
-        <label>
-          환자명 검색
-          <Input value={draft} onChange={(e) => setDraft(e.target.value)} />
-        </label>
-        <Button type="submit">검색</Button>
-      </form>
-      {query.isPending ? (
-        <Loading />
-      ) : query.isError ? (
-        <ErrorState
-          message={bookingError(query.error)}
-          onRetry={() => void query.refetch()}
-        />
-      ) : (
-        <>
-          <ul className="appointment-patient-results">
-            {query.data.data.map((p) => (
-              <li key={p.id}>
-                <Button variant="secondary" onClick={() => onSelect(p)}>
-                  {p.name} · {p.patientNumber}
-                </Button>
-              </li>
-            ))}
-          </ul>
-          {!query.data.data.length && <p>검색 결과가 없습니다.</p>}
-          <Pagination
-            page={page}
-            totalPages={query.data.meta.totalPages}
-            onPageChange={setPage}
-          />
-        </>
-      )}
-    </Modal>
   );
 }

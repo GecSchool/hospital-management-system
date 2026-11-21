@@ -297,6 +297,52 @@ it('shows previous/latest versions and reason after correction and keeps immutab
   expect(within(panel).queryByText('관찰 보완')).toBeNull();
   expect((await f.c.record(id)).latestVersion.versionNo).toBe(2);
 });
+it.each([false, true])(
+  'shows nursing metadata and only offers record selection when needed (multiple=%s)',
+  async (multiple) => {
+    const f = await setup();
+    const nursing = f.s.nursing(async () => mockAccounts.NURSE);
+    vi.setSystemTime(new Date('2026-11-09T03:01:00Z'));
+    const correction = await nursing.correct(f.n.id, {
+      baseVersionNo: 1,
+      content: '[가상] 정정한 간호 기록',
+      correctionReason: '처치 내용 보완',
+    });
+    if (multiple) {
+      vi.setSystemTime(new Date('2026-11-09T03:02:00Z'));
+      await nursing.create(f.r.id, { content: '[가상] 두 번째 간호 기록' });
+    }
+
+    await ui(f, `/doctor/visits/${f.v.id}`);
+    const panel = within(
+      await screen.findByRole('region', { name: '간호 기록' }),
+    );
+    if (multiple) {
+      const list = await panel.findByRole('navigation', {
+        name: '간호 기록 목록',
+      });
+      expect(within(list).getAllByRole('button')).toHaveLength(2);
+      fireEvent.click(within(list).getByRole('button', { name: /12:02/ }));
+      await panel.findByText('[가상] 두 번째 간호 기록');
+      fireEvent.click(within(list).getByRole('button', { name: /12:00/ }));
+    }
+    await panel.findByText('[가상] 정정한 간호 기록');
+    expect(panel.getByRole('heading', { name: '정정 사유' })).toBeTruthy();
+    expect(panel.getByText('처치 내용 보완')).toBeTruthy();
+    expect(
+      panel.getByText(
+        `2026.11.09 12:01 · ${correction.author.name} · 정정 버전 2`,
+      ),
+    ).toBeTruthy();
+    if (!multiple)
+      expect(
+        panel.queryByRole('navigation', { name: '간호 기록 목록' }),
+      ).toBeNull();
+    fireEvent.click(panel.getByRole('button', { name: /^원본 ·/ }));
+    await panel.findByText('[가상] 간호 기록 보존');
+    expect(panel.queryByRole('heading', { name: '정정 사유' })).toBeNull();
+  },
+);
 it('preserves all four draft fields on conflict and requires explicit latest reload before resubmitting', async () => {
   const f = await setup();
   const id = f.result!.version.recordId;

@@ -146,11 +146,11 @@ it('renders patient selection and shared form, saves once, and reads nurse detai
   );
   fireEvent.click(screen.getByRole('link', { name: '선택 ›' }));
   await screen.findByRole('heading', { name: '예약 등록' });
-  await waitFor(() =>
-    expect((screen.getByLabelText('환자') as HTMLInputElement).value).toContain(
-      '가상환자003',
-    ),
-  );
+  await screen.findByText('가상환자003 · 1990-01-03');
+  expect(screen.getByText(mockAccounts.NURSE.department!.name)).toBeTruthy();
+  expect(screen.queryByRole('combobox', { name: '진료과' })).toBeNull();
+  expect(screen.queryByRole('textbox', { name: '환자' })).toBeNull();
+  expect(screen.queryByText(/P000/)).toBeNull();
   expect(detail).not.toHaveBeenCalled();
   await screen.findByRole('option', { name: '가상의사3' });
   fireEvent.change(screen.getByLabelText('담당 의사'), {

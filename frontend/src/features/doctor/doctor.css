@@ -183,9 +183,6 @@
 .doctor-grid--day {
   min-width: 360px;
 }
-.doctor-grid--day td {
-  height: 96px;
-}
 .doctor-list-row {
   display: grid;
   grid-template-columns: 60px 1fr 1fr 1fr;
@@ -228,6 +225,72 @@
 .doctor-scope .doctor-date-picker:focus-within {
   outline: 2px solid var(--color-brand-primary);
   outline-offset: 4px;
+}
+.schedule-date-picker {
+  position: relative;
+}
+.schedule-date-trigger,
+.schedule-calendar button {
+  color: var(--color-text-primary);
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.schedule-date-trigger {
+  padding: 4px 0;
+}
+.schedule-calendar {
+  position: absolute;
+  z-index: 4;
+  top: calc(100% + 16px);
+  left: 0;
+  width: min(336px, calc(100vw - 70px));
+  padding: 15px;
+  background: var(--color-bg-surface);
+  border: var(--border-default);
+  border-radius: var(--radius-md);
+}
+.schedule-calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: var(--border-default);
+  font: var(--font-label-m);
+}
+.schedule-calendar button {
+  min-height: 36px;
+  border-radius: var(--radius-md);
+  font: inherit;
+}
+.schedule-calendar-header button {
+  padding: 0 12px;
+}
+.schedule-calendar button:hover,
+.schedule-calendar button:focus-visible {
+  background: var(--color-bg-muted);
+}
+.schedule-calendar button[aria-pressed='true'] {
+  background: var(--color-brand-subtle);
+  color: var(--color-brand-primary);
+}
+.schedule-calendar-days,
+.schedule-calendar-months {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+  text-align: center;
+  font: var(--font-body-s);
+}
+.schedule-calendar-days {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+.schedule-calendar-days > span {
+  padding: 8px 0;
+  color: var(--color-text-secondary);
+}
+.schedule-calendar-months {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 .doctor-scope .doctor-navigation > .ui-button--secondary {
   min-width: 80px;
@@ -297,11 +360,25 @@
   font: inherit;
 }
 .doctor-scope .doctor-grid td .doctor-patient-group {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
   text-align: left;
   height: auto;
   min-height: 18px;
   background: #d5eaf1;
   color: var(--color-brand-primary);
+}
+.doctor-patient-group > :first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.doctor-patient-group > :last-child {
+  flex: none;
+  white-space: nowrap;
 }
 .doctor-scope .doctor-week td {
   position: relative;
@@ -352,22 +429,36 @@
   gap: 32px;
   padding-top: 24px;
 }
+.doctor-scope .doctor-day .doctor-grid-scroll {
+  max-height: 796px;
+}
 .doctor-scope .doctor-grid--day {
   border-spacing: 0;
 }
 .doctor-scope .doctor-grid--day caption {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--color-bg-surface);
   padding: 0 0 48px;
   height: 96px;
+}
+.doctor-scope .doctor-grid--day :is(td.is-closed, td.is-leave):not([data-no-availability]) {
+  background: var(--color-bg-canvas);
 }
 .doctor-scope .doctor-grid--day thead {
   display: none;
 }
 .doctor-scope .doctor-grid--day td {
-  height: 96px;
+  height: auto;
   position: relative;
   background: transparent;
   border: 0;
   border-bottom: var(--border-default);
+  padding: 0;
+}
+.doctor-scope .doctor-day-slot {
+  min-height: 95px;
   padding: 12px 8px 12px 24px;
 }
 .doctor-scope .doctor-grid--day th {
@@ -380,11 +471,19 @@
   color: var(--color-text-primary);
   font: var(--font-body-s);
   padding: 6px 0;
+  gap: 8px;
   border-bottom: 1px solid var(--color-bg-muted);
 }
-.doctor-scope .doctor-grid--day .doctor-patient span + span {
+.doctor-scope .doctor-grid--day .doctor-patient > span + span {
+  flex-shrink: 0;
   color: var(--color-text-secondary);
   font: var(--font-caption);
+}
+.doctor-scope .doctor-patient-start {
+  margin-left: 8px;
+  color: var(--color-text-secondary);
+  font: var(--font-caption);
+  white-space: nowrap;
 }
 .doctor-scope .doctor-lists {
   display: grid;

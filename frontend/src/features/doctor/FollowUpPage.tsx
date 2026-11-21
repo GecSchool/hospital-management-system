@@ -15,7 +15,13 @@ import {
   dateTimeLabel,
   longDateLabel,
 } from '../staff/format';
-import { slotReason } from '../appointments/queries';
+import { bookingKey } from '../appointments/queries';
+import {
+  AppointmentSlotGrid,
+  sameAppointmentTime,
+  visibleAppointmentSlots,
+} from '../appointments/AppointmentSlotGrid';
+import type { AppointmentService } from '../appointments/service';
 import { useClinicalWrite } from './clinicalWrite';
 import type { Visit } from '../nurse/service';
 import type { ClinicalService } from './clinicalService';
@@ -85,7 +91,11 @@ function Session({ source }: { source: StaffService }) {
       ) : visit.data.status !== 'COMPLETED' ? (
         <p role="alert">완료된 진료에서만 재진 예약할 수 있습니다.</p>
       ) : (
-        <FollowUpForm visit={visit.data} service={service} />
+        <FollowUpForm
+          visit={visit.data}
+          service={service}
+          loadAvailability={source.booking.availability}
+        />
       )}
     </section>
   );
@@ -93,9 +103,11 @@ function Session({ source }: { source: StaffService }) {
 function FollowUpForm({
   visit,
   service,
+  loadAvailability,
 }: {
   visit: Visit;
   service: ClinicalService;
+  loadAvailability: AppointmentService['availability'];
 }) {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -108,6 +120,10 @@ function FollowUpForm({
   const [confirm, setConfirm] = useState(false);
   const [saved, setSaved] = useState<NurseAppointment | null>(null);
   const write = useClinicalWrite();
+  const availability = useQuery({
+    queryKey: [...bookingKey(user!.id), 'availability', visit.doctor.id],
+    queryFn: ({ signal }) => loadAvailability(visit.doctor.id, signal),
+  });
   const slots = useQuery({
     queryKey: [
       ...queryKeys.resource(user!.id, 'staff-appointments'),
@@ -118,8 +134,14 @@ function FollowUpForm({
     ],
     queryFn: ({ signal }) => service.followUpSlots(visit.id, date, signal),
   });
+  const visibleSlots = visibleAppointmentSlots(
+    slots.data,
+    availability.data?.weeklySlots,
+  );
   const available =
-    !!slots.data?.slots.some((s) => s.startsAt === time && s.available) &&
+    visibleSlots.some(
+      (s) => sameAppointmentTime(s.startsAt, time) && s.available,
+    ) &&
     !slots.isFetching &&
     !slots.isError;
   const success = saved ? (
@@ -197,26 +219,20 @@ function FollowUpForm({
                 void slots.refetch();
               }}
             />
-          ) : !slots.data.slots.length ? (
-            <p>예약 가능한 시간대가 없습니다.</p>
           ) : (
-            <div className="appointment-slot-grid" aria-label="재진 예약 시간">
-              {slots.data.slots.map((s) => (
-                <button
-                  type="button"
-                  key={s.startsAt}
-                  aria-label={`${s.startsAt.slice(11, 16)}${s.available ? '' : ` · ${slotReason(s.reason)}`}`}
-                  title={s.available ? '예약 가능' : slotReason(s.reason)}
-                  aria-pressed={time === s.startsAt}
-                  disabled={
-                    !s.available || write.pending || !!saved || slots.isFetching
-                  }
-                  onClick={() => setTime(s.startsAt)}
-                >
-                  {s.startsAt.slice(11, 16)}
-                </button>
-              ))}
-            </div>
+            <AppointmentSlotGrid
+              label="재진 예약 시간"
+              slots={visibleSlots}
+              value={time}
+              onSelect={setTime}
+              disabled={write.pending || !!saved || slots.isFetching}
+            />
+          )}
+          {availability.isError && (
+            <ErrorState
+              message="진료 가능 시간 안내를 불러오지 못했습니다."
+              onRetry={() => void availability.refetch()}
+            />
           )}
         </section>
       </div>

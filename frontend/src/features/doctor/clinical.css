@@ -74,10 +74,26 @@
   border-top: var(--border-default);
   padding-top: 24px;
 }
-.clinical-nursing nav {
-  display: flex;
-  gap: 24px;
-  flex-wrap: wrap;
+.clinical-record-meta {
+  color: var(--color-text-secondary);
+  font: var(--font-body-s);
+}
+.clinical-nursing-records {
+  display: grid;
+  margin-top: 16px;
+}
+.clinical-nursing-records .clinical-link {
+  padding: 12px 0;
+  border-bottom: var(--border-default);
+  color: var(--color-text-secondary);
+  text-align: left;
+}
+.clinical-nursing-records .clinical-link:hover,
+.clinical-nursing-records [aria-pressed='true'] {
+  color: var(--color-brand-primary);
+}
+.clinical-nursing-records [aria-pressed='true'] {
+  border-bottom-color: var(--color-brand-primary);
 }
 @media (max-width: 1100px) {
   .clinical-columns {
@@ -108,25 +124,33 @@
   text-underline-offset: 4px;
 }
 .clinical-reason {
-  border-top: var(--border-default);
-  margin-top: 24px;
+  margin-top: 28px;
 }
-.doctor-scope .clinical-search {
-  float: right;
-  margin-top: 32px;
-  color: var(--color-text-secondary);
-  font: var(--font-body-s);
+.clinical-panel .clinical-reason h3 {
+  margin-top: 0;
 }
-.doctor-scope .clinical-search summary {
-  cursor: pointer;
-}
-.doctor-scope .clinical-patients-title {
-  margin: 48px 0 0;
-}
-.doctor-scope .clinical-table {
-  margin-top: 8px;
-  clear: both;
+.doctor-scope .clinical-patient-list {
   max-width: 1016px;
+}
+.doctor-scope .clinical-patient-list .page-header {
+  min-height: 0;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+.doctor-scope .clinical-filters {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+  margin: var(--space-4) 0;
+}
+.doctor-scope .clinical-filters .schedule-date-trigger {
+  min-height: 48px;
+}
+.doctor-scope .clinical-filters .ui-select {
+  width: auto;
+  min-width: 120px;
 }
 .doctor-scope .clinical-table .ui-table {
   table-layout: fixed;

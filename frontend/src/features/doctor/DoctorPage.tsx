@@ -1,4 +1,5 @@
 import { CurrentTime } from './CurrentTime';
+import { ScheduleDatePicker } from './ScheduleDatePicker';
 import { SchedulePatientPicker } from './SchedulePatientPicker';
 import { normalizeDate } from '../staff/validation';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -22,6 +23,7 @@ import {
 } from '../staff/format';
 import {
   clock,
+  dailySchedule,
   includesSlot,
   minutes,
   normalizedSlots,
@@ -65,8 +67,10 @@ function Session({ source }: { source: StaffService }) {
   const [notice, setNotice] = useState('');
   const [leaving, setLeaving] = useState(false);
   const [availabilityError, setAvailabilityError] = useState(false);
-  const date = normalizeDate(params.get('date') ?? '') ?? businessDate();
+  const today = businessDate();
+  const date = normalizeDate(params.get('date') ?? '') ?? today;
   const dayView = location.pathname.endsWith('/day');
+  const period = date < today ? 'past' : date > today ? 'future' : 'today';
   const editing = location.pathname.endsWith('/availability');
   const from = dayView ? date : shiftDate(date, -((weekday(date) + 6) % 7));
   const to = dayView ? date : shiftDate(from, 6);
@@ -93,6 +97,9 @@ function Session({ source }: { source: StaffService }) {
     () => (schedule.data ? scheduleItems(schedule.data) : []),
     [schedule.data],
   );
+  const day =
+    dayView && schedule.data ? dailySchedule(schedule.data, period) : null;
+  const calendarItems = day?.items ?? allItems;
   const write = useBookingWrite();
   useEffect(() => {
     if (editing && write.error && !write.pending) setAvailabilityError(true);
@@ -108,7 +115,17 @@ function Session({ source }: { source: StaffService }) {
   return (
     <div
       className={`doctor-page ${editing ? 'doctor-availability-page' : 'doctor-schedule-page'}`}
-      data-figma-node={editing ? '30:136' : dayView ? '42:1199' : '42:949'}
+      data-figma-node={
+        editing
+          ? '30:136'
+          : !dayView
+            ? '42:949'
+            : {
+                today: '42:1199',
+                past: '222:16540',
+                future: '193:17445',
+              }[period]
+      }
     >
       <PageHeader
         title={editing ? '진료 가능 시간' : '진료 일정'}
@@ -157,19 +174,21 @@ function Session({ source }: { source: StaffService }) {
           >
             ‹
           </Button>
-          <label className="doctor-date-picker">
-            <span className="doctor-date-label">
-              {dayView
-                ? longDateLabel(date)
-                : `${dateLabel(from)} – ${dateLabel(to).slice(5)}`}
-            </span>
-            <Input
-              aria-label="선택 날짜"
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
-          </label>
+          {dayView ? (
+            <ScheduleDatePicker date={date} onChange={setDate} />
+          ) : (
+            <label className="doctor-date-picker">
+              <span className="doctor-date-label">
+                {`${dateLabel(from)} – ${dateLabel(to).slice(5)}`}
+              </span>
+              <Input
+                aria-label="선택 날짜"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+              />
+            </label>
+          )}
           <Button
             size="compact"
             aria-label="다음 기간"
@@ -189,14 +208,16 @@ function Session({ source }: { source: StaffService }) {
               선택한 날짜　{longDateLabel(date).replace(/^\d+년 /, '')}
             </span>
           )}
-          <Button
-            className="doctor-leave-button"
-            variant="secondary"
-            size="compact"
-            onClick={() => setLeaving(true)}
-          >
-            휴진 신청
-          </Button>
+          {(!dayView || period !== 'past') && (
+            <Button
+              className="doctor-leave-button"
+              variant="secondary"
+              size="compact"
+              onClick={() => setLeaving(true)}
+            >
+              휴진 신청
+            </Button>
+          )}
         </div>
       )}
       {!editing && !dayView && (
@@ -241,7 +262,13 @@ function Session({ source }: { source: StaffService }) {
                   ref={table}
                   className={`doctor-grid ${dayView ? 'doctor-grid--day' : ''}`}
                 >
-                  <caption>{dayView ? '오늘의 시간표' : '주간 시간표'}</caption>
+                  <caption>
+                    {!dayView
+                      ? '주간 시간표'
+                      : period === 'today'
+                        ? '오늘의 시간표'
+                        : '진료 시간표'}
+                  </caption>
                   <thead>
                     <tr>
                       <th>시각</th>
@@ -268,12 +295,14 @@ function Session({ source }: { source: StaffService }) {
                       .filter(
                         (m) =>
                           (m >= 540 && m < 1080) ||
-                          schedule.data!.availability.some(
-                            (s) =>
-                              minutes(s.startTime) <= m &&
-                              minutes(s.endTime) > m,
-                          ) ||
-                          allItems.some((a) => {
+                          ((period !== 'past' || !dayView) &&
+                            schedule.data!.availability.some(
+                              (s) =>
+                                (!dayView || s.dayOfWeek === weekday(date)) &&
+                                minutes(s.startTime) <= m &&
+                                minutes(s.endTime) > m,
+                            )) ||
+                          calendarItems.some((a) => {
                             const t = minutes(dateTimeLabel(a.time, true));
                             return t >= m && t < m + 20;
                           }),
@@ -288,16 +317,50 @@ function Session({ source }: { source: StaffService }) {
                             const off = schedule.data!.leaves.some(
                               (l) => l.date === d,
                             );
-                            const items = allItems.filter(
+                            const items = calendarItems.filter(
                               (a) =>
                                 seoulDate(a.time) === d &&
                                 minutes(dateTimeLabel(a.time, true)) >= m &&
                                 minutes(dateTimeLabel(a.time, true)) < m + 20,
                             );
+                            const patientLinks = items.map((a) => (
+                              <Link
+                                className="doctor-patient"
+                                key={a.id}
+                                to={patientPath(a)}
+                                aria-label={
+                                  dayView
+                                    ? `${a.patient.name} ${statusLabels[a.status]}`
+                                    : undefined
+                                }
+                                state={{
+                                  returnTo: `${location.pathname}${location.search}`,
+                                }}
+                              >
+                                <span>
+                                  {a.patient.name}
+                                  {dayView &&
+                                    period === 'today' &&
+                                    !a.appointmentId && (
+                                      <small className="doctor-patient-start">
+                                        {dateTimeLabel(a.time, true)}
+                                      </small>
+                                    )}
+                                </span>
+                                {dayView && (
+                                  <span>{statusLabels[a.status]}</span>
+                                )}
+                              </Link>
+                            ));
                             return (
                               <td
                                 key={d}
                                 data-slot-start={dayView ? m : undefined}
+                                data-no-availability={
+                                  dayView && period === 'past'
+                                    ? 'true'
+                                    : undefined
+                                }
                                 data-picker-edge={
                                   !dayView && weekday(d) !== 0 && weekday(d) < 4
                                     ? 'right'
@@ -321,7 +384,11 @@ function Session({ source }: { source: StaffService }) {
                                       : 'is-closed'
                                 }
                               >
-                                {items.length > 1 && !dayView ? (
+                                {dayView ? (
+                                  <div className="doctor-day-slot">
+                                    {patientLinks}
+                                  </div>
+                                ) : items.length > 1 ? (
                                   <button
                                     id={`doctor-patient-trigger-${items[0].id}`}
                                     data-doctor-patient-trigger
@@ -340,26 +407,11 @@ function Session({ source }: { source: StaffService }) {
                                       )
                                     }
                                   >
-                                    {items
-                                      .map((a) => a.patient.name)
-                                      .join(' · ')}
+                                    <span>{items[0].patient.name}</span>
+                                    <span>외 {items.length - 1}명</span>
                                   </button>
                                 ) : (
-                                  items.map((a) => (
-                                    <Link
-                                      className="doctor-patient"
-                                      key={a.id}
-                                      to={patientPath(a)}
-                                      state={{
-                                        returnTo: `${location.pathname}${location.search}`,
-                                      }}
-                                    >
-                                      <span>{a.patient.name}</span>
-                                      {dayView && (
-                                        <span>{statusLabels[a.status]}</span>
-                                      )}
-                                    </Link>
-                                  ))
+                                  patientLinks
                                 )}
                                 {!dayView &&
                                   items.length > 1 &&
@@ -380,50 +432,34 @@ function Session({ source }: { source: StaffService }) {
                       ))}
                   </tbody>
                 </table>
-                {dayView && (
+                {dayView && period === 'today' && (
                   <CurrentTime key={date} date={date} table={table} />
                 )}
               </div>
-              {dayView && (
+              {day && (
                 <div className="doctor-lists">
-                  {(['appointments', 'receptions'] as const).map((kind) => (
-                    <section key={kind}>
-                      <h2>
-                        {date === businessDate() ? '오늘 ' : ''}
-                        {kind === 'appointments' ? '예약 환자' : '내원 환자'}
-                      </h2>
-                      {!schedule.data![kind].length && (
-                        <p>등록된 환자가 없습니다.</p>
-                      )}
-                      {schedule.data![kind].map((r) => (
+                  {day.lists.map(({ title, rows }) => (
+                    <section key={title} aria-label={title}>
+                      <h2>{title}</h2>
+                      {!rows.length && <p>등록된 환자가 없습니다.</p>}
+                      {rows.map((r) => (
                         <div className="doctor-list-row" key={r.id}>
-                          <span>
-                            {dateTimeLabel(
-                              'startsAt' in r ? r.startsAt : r.receivedAt,
-                              true,
-                            )}
-                          </span>
+                          <span>{dateTimeLabel(r.time, true)}</span>
                           <span>{r.patient.name}</span>
                           <span>
                             {r.patient.birthDate
                               ? dateLabel(r.patient.birthDate)
                               : '—'}
                           </span>
-                          <span>{statusLabels[r.displayStatus]}</span>
+                          <span>{statusLabels[r.status]}</span>
                           <Link
                             className="clinical-link"
-                            to={patientPath(
-                              allItems.find((item) =>
-                                kind === 'appointments'
-                                  ? item.appointmentId === r.id
-                                  : item.receptionId === r.id,
-                              )!,
-                            )}
+                            to={patientPath(r)}
                             state={{
                               returnTo: `${location.pathname}${location.search}`,
                             }}
                           >
-                            {r.displayStatus === 'IN_PROGRESS'
+                            {r.status === 'IN_PROGRESS'
                               ? '진료하기 ›'
                               : '보기 ›'}
                           </Link>
@@ -434,14 +470,18 @@ function Session({ source }: { source: StaffService }) {
                 </div>
               )}
             </div>
-            {!allItems.length && <p>조회 기간의 예약·접수 일정이 없습니다.</p>}
-            <details className="doctor-leave-list">
-              <summary>휴진 목록</summary>
-              {schedule.data.leaves.map((l) => (
-                <p key={l.date}>{l.date} · 휴진</p>
-              ))}
-              {!schedule.data.leaves.length && <p>등록된 휴진이 없습니다.</p>}
-            </details>
+            {!dayView && !allItems.length && (
+              <p>조회 기간의 예약·접수 일정이 없습니다.</p>
+            )}
+            {!dayView && (
+              <details className="doctor-leave-list">
+                <summary>휴진 목록</summary>
+                {schedule.data.leaves.map((l) => (
+                  <p key={l.date}>{l.date} · 휴진</p>
+                ))}
+                {!schedule.data.leaves.length && <p>등록된 휴진이 없습니다.</p>}
+              </details>
+            )}
           </>
         )
       )}

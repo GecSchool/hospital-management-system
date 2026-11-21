@@ -1,7 +1,9 @@
 import { ClinicalRecordPanel } from './RecordWorkspace';
+import { RecordCorrectionReason, RecordVersionMeta } from './ClinicalRead';
 import { ClinicalHistory } from './ClinicalHistory';
 import { DoctorClose } from './DoctorClose';
 import { DraftExit } from './DraftExit';
+import { ScheduleDatePicker } from './ScheduleDatePicker';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { Link, useLocation, useParams, useSearchParams } from 'react-router';
@@ -16,19 +18,11 @@ import {
   dateTimeLabel,
   dateLabel,
   formatPhone,
-  longDateLabel,
   statusLabels,
 } from '../staff/format';
 import { normalizeDate } from '../staff/validation';
 import { PageHeader } from '../../components/layout';
-import {
-  Button,
-  Input,
-  Select,
-  Table,
-  Modal,
-  FormField,
-} from '../../components/ui';
+import { Button, Select, Table, Modal, FormField } from '../../components/ui';
 import { ErrorState, Loading } from '../../components/common';
 import type { DisplayStatus } from '../staff/types';
 import type { ClinicalInput } from './clinicalService';
@@ -135,46 +129,28 @@ function ClinicalSession({ source }: { source: StaffService }) {
   });
   if (!visitId && !requestedPatient)
     return (
-      <section className="doctor-page" data-figma-node="92:1854">
-        <PageHeader
-          title="환자 진료"
-          description={`${longDateLabel(date)} · ${user!.department?.name ?? ''}`}
-        />
-        <details className="clinical-search">
-          <summary>조회 조건</summary>
-          <form
-            className="doctor-navigation clinical-filters"
-            onSubmit={(e) => e.preventDefault()}
+      <section className="doctor-page clinical-patient-list" data-figma-node="92:1854">
+        <PageHeader title="환자 진료" />
+        <div className="clinical-filters" role="group" aria-label="조회 조건">
+          <ScheduleDatePicker
+            date={date}
+            onChange={(nextDate) => setParams({ date: nextDate })}
+          />
+          <Select
+            aria-label="진행 상태"
+            value={status ?? ''}
+            onChange={(e) =>
+              setStatus((e.target.value as DisplayStatus) || undefined)
+            }
           >
-            <label>
-              조회 날짜
-              <Input
-                type="date"
-                value={date}
-                onChange={(e) => {
-                  if (e.target.value) setParams({ date: e.target.value });
-                }}
-              />
-            </label>
-            <label>
-              진행 상태
-              <Select
-                value={status ?? ''}
-                onChange={(e) =>
-                  setStatus((e.target.value as DisplayStatus) || undefined)
-                }
-              >
-                <option value="">전체 상태</option>
-                {Object.entries(statusLabels).map(([k, v]) => (
-                  <option key={k} value={k}>
-                    {v}
-                  </option>
-                ))}
-              </Select>
-            </label>
-          </form>
-        </details>
-        <h2 className="clinical-patients-title">오늘의 환자</h2>
+            <option value="">전체 상태</option>
+            {Object.entries(statusLabels).map(([k, v]) => (
+              <option key={k} value={k}>
+                {v}
+              </option>
+            ))}
+          </Select>
+        </div>
         {patients.isPending ? (
           <Loading />
         ) : patients.isError ? (
@@ -327,7 +303,8 @@ function ClinicalSession({ source }: { source: StaffService }) {
                 }
               />
             )}
-            {visit.data?.status === 'IN_PROGRESS' && !selectedRecord ? null : record.isError ? (
+            {visit.data?.status === 'IN_PROGRESS' &&
+            !selectedRecord ? null : record.isError ? (
               <ErrorState
                 message={record.error.message}
                 onRetry={() => void record.refetch()}
@@ -479,8 +456,12 @@ function NursingRead({
   });
   const [id, setId] = useState('');
   const selected = id || notes.data?.pages[0].data[0]?.id;
+  const records = (notes.data?.pages ?? [])
+    .slice()
+    .reverse()
+    .flatMap((page) => page.data);
   return (
-    <section className="clinical-nursing">
+    <section className="clinical-nursing" aria-label="간호 기록">
       <h2>간호 기록</h2>
       {notes.isPending ? (
         <Loading />
@@ -491,22 +472,25 @@ function NursingRead({
         />
       ) : (
         <>
-          {!notes.data.pages.some((p) => p.data.length) && (
-            <p>등록된 간호 기록이 없습니다.</p>
+          {!records.length && <p>등록된 간호 기록이 없습니다.</p>}
+          {records.length > 1 && (
+            <nav
+              className="clinical-nursing-records"
+              aria-label="간호 기록 목록"
+            >
+              {records.map((record) => (
+                <button
+                  key={record.id}
+                  className="clinical-link"
+                  type="button"
+                  aria-pressed={selected === record.id}
+                  onClick={() => setId(record.id)}
+                >
+                  {dateTimeLabel(record.createdAt)} · {record.author.name}
+                </button>
+              ))}
+            </nav>
           )}
-          {[...notes.data.pages]
-            .reverse()
-            .flatMap((p) => p.data)
-            .map((r) => (
-              <Button
-                key={r.id}
-                variant="secondary"
-                size="compact"
-                onClick={() => setId(r.id)}
-              >
-                {dateTimeLabel(r.createdAt)} · {r.author.name}
-              </Button>
-            ))}
           {notes.hasNextPage && (
             <Button
               variant="secondary"
@@ -562,7 +546,7 @@ function NursingDetail({
         />
       ) : (
         <>
-          <nav aria-label="간호 기록 버전">
+          <nav className="clinical-versions" aria-label="간호 기록 버전">
             {detail.data.versions.map((s) => (
               <button
                 className="clinical-link"
@@ -573,7 +557,11 @@ function NursingDetail({
                 }
                 onClick={() => setN(s.versionNo)}
               >
-                {s.versionNo === 1 ? '원본' : `${s.versionNo - 1}차 정정`}
+                {s.versionNo === 1 ? '원본' : `${s.versionNo - 1}차 정정`} ·{' '}
+                {dateTimeLabel(s.createdAt, true)}
+                {s.versionNo === detail.data.latestVersion.versionNo
+                  ? ' (최신)'
+                  : ''}
               </button>
             ))}
           </nav>
@@ -584,12 +572,10 @@ function NursingDetail({
             />
           ) : v ? (
             <>
-              <p>
-                {dateTimeLabel(v.createdAt)} · {v.author.name}
-              </p>
+              <RecordVersionMeta version={v} />
               <p className="clinical-text">{v.content}</p>
-              {v.correctionReason && (
-                <p className="clinical-text">정정 사유: {v.correctionReason}</p>
+              {v.correctionReason !== null && (
+                <RecordCorrectionReason reason={v.correctionReason} />
               )}
             </>
           ) : (
