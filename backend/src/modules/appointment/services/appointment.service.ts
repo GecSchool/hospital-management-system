@@ -9,19 +9,8 @@ import {
 } from '../../medical-staff/services/doctor-work-lock.js';
 import { isAppointmentSlotAvailable } from '../../doctor-schedule/services/appointment-slots.service.js';
 import { appointmentSelect, toAppointment } from './appointment-query.service.js';
-function unavailable(): never {
-  throw new AppError(409, 'SLOT_UNAVAILABLE', '선택한 시간에 예약할 수 없습니다.');
-}
-function duplicate(error: unknown) {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    error.code === 'P2002' &&
-    'meta' in error &&
-    /appointments_booked_doctor_time_key|doctor_account_id/.test(JSON.stringify(error.meta))
-  );
-}
+import { rethrowAppointmentWriteError, slotUnavailable } from './appointment-write-errors.js';
+
 async function activeActor(
   tx: Prisma.TransactionClient,
   actor: AccountContext,
@@ -55,11 +44,11 @@ export async function createAppointment(
       if (!doctor) throw new AppError(404, 'NOT_FOUND', '의사를 찾을 수 없습니다.');
       if (requester.role === 'NURSE' && requester.nurse?.departmentId !== data.departmentId)
         throw new AppError(403, 'FORBIDDEN', '본인 진료과에서만 예약할 수 있습니다.');
-      if (doctor.departmentId !== data.departmentId) unavailable();
+      if (doctor.departmentId !== data.departmentId) slotUnavailable();
       await tx.$queryRaw`SELECT id FROM "departments" WHERE id = ${data.departmentId} FOR UPDATE`;
       if (!(await tx.patient.findUnique({ where: { id: data.patientId }, select: { id: true } })))
         throw new AppError(404, 'NOT_FOUND', '환자를 찾을 수 없습니다.');
-      if (!(await isAppointmentSlotAvailable(tx, data.doctorId, data.startsAt))) unavailable();
+      if (!(await isAppointmentSlotAvailable(tx, data.doctorId, data.startsAt))) slotUnavailable();
       const row = await tx.appointment.create({
         data: {
           patientId: data.patientId,
@@ -73,8 +62,7 @@ export async function createAppointment(
       return toAppointment(row, requester.role);
     });
   } catch (error) {
-    if (duplicate(error)) unavailable();
-    throw error;
+    rethrowAppointmentWriteError(error);
   }
 }
 async function mutableAppointment(tx: Prisma.TransactionClient, id: string) {
@@ -110,14 +98,14 @@ export async function changeAppointmentTime(actor: AccountContext, id: string, s
           where: { accountId: current.doctorAccountId },
           select: { departmentId: true },
         });
-        if (!doctor || doctor.departmentId !== current.departmentId) unavailable();
+        if (!doctor || doctor.departmentId !== current.departmentId) slotUnavailable();
         await tx.$queryRaw`SELECT id FROM "departments" WHERE id = ${current.departmentId} FOR UPDATE`;
         if (
           !(await isAppointmentSlotAvailable(tx, current.doctorAccountId, startsAt, {
             excludeAppointmentId: id,
           }))
         )
-          unavailable();
+          slotUnavailable();
         await tx.appointment.update({ where: { id }, data: { startsAt } });
       }
       return toAppointment(
@@ -126,8 +114,7 @@ export async function changeAppointmentTime(actor: AccountContext, id: string, s
       );
     });
   } catch (error) {
-    if (duplicate(error)) unavailable();
-    throw error;
+    rethrowAppointmentWriteError(error);
   }
 }
 // APT-05: 직원만 접수 전 예약을 취소하고 취소자·시각을 보존한다.

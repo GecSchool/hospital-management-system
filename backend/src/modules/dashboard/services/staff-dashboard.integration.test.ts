@@ -2,7 +2,10 @@ import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 import * as dbConfig from '../../../config/prisma.js';
 import { testDatabaseUrl } from '../../../../scripts/test-db-config.mjs';
 import { withRollback } from '../../../../tests/helpers/transaction.js';
-import { createMedicalStaffFixture } from '../../../../tests/helpers/medical-staff-fixture.js';
+import {
+  createMedicalStaffFixture,
+  createScheduledAppointmentFixture,
+} from '../../../../tests/helpers/medical-staff-fixture.js';
 import { getStaffDashboard } from './staff-dashboard.service.js';
 import { listAppointments } from '../../appointment/services/appointment-query.service.js';
 import { parseAppointmentQuery } from '../../appointment/validations/appointment-query.validation.js';
@@ -66,7 +69,7 @@ describe('직원 대시보드', () => {
         doctorAccountId: f.doctor.id,
         departmentId: f.department.id,
       };
-      const appointment = await tx.appointment.create({
+      const appointment = await createScheduledAppointmentFixture(tx, {
         data: {
           ...fields,
           registeredByAccountId: f.admin.id,
@@ -119,7 +122,7 @@ describe('직원 대시보드', () => {
       const appointmentIds: string[] = [];
       for (let i = 0; i < 6; i++) {
         const at = new Date(Date.parse('2030-01-01T09:00:00+09:00') + i * 20 * 60 * 1000);
-        const appointment = await tx.appointment.create({
+        const appointment = await createScheduledAppointmentFixture(tx, {
           data: { ...fields, registeredByAccountId: f.admin.id, startsAt: at },
         });
         appointmentIds.push(appointment.id);
@@ -138,8 +141,8 @@ describe('직원 대시보드', () => {
         },
       });
       // 서울 날짜의 양 끝 경계 밖 예약은 포함하지 않는다.
-      for (const startsAt of ['2029-12-31T23:59:59+09:00', '2030-01-02T00:00:00+09:00']) {
-        await tx.appointment.create({
+      for (const startsAt of ['2029-12-31T23:40:00+09:00', '2030-01-02T00:00:00+09:00']) {
+        await createScheduledAppointmentFixture(tx, {
           data: { ...fields, registeredByAccountId: f.admin.id, startsAt: new Date(startsAt) },
         });
       }

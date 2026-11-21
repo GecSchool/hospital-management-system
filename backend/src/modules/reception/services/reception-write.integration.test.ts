@@ -3,7 +3,10 @@ import * as dbConfig from '../../../config/prisma.js';
 import { businessDate } from '../../../common/utils/time.js';
 import { testDatabaseUrl } from '../../../../scripts/test-db-config.mjs';
 import { withRollback } from '../../../../tests/helpers/transaction.js';
-import { createMedicalStaffFixture } from '../../../../tests/helpers/medical-staff-fixture.js';
+import {
+  createMedicalStaffFixture,
+  createScheduledAppointmentFixture,
+} from '../../../../tests/helpers/medical-staff-fixture.js';
 import { parseReceptionCreate } from '../validations/reception.validation.js';
 import { createReception, deleteReception } from './reception.service.js';
 import express from 'express';
@@ -50,7 +53,7 @@ describe('접수 생성·삭제', () => {
         departmentId: null,
       };
       const today = businessDate(new Date());
-      const apt = await tx.appointment.create({
+      const apt = await createScheduledAppointmentFixture(tx, {
         data: {
           patientId: f.patient.id,
           departmentId: f.department.id,
@@ -60,7 +63,7 @@ describe('접수 생성·삭제', () => {
         },
       });
       const tomorrow = new Date(new Date(`${today}T00:00:00+09:00`).getTime() + 86400000);
-      const nextApt = await tx.appointment.create({
+      const nextApt = await createScheduledAppointmentFixture(tx, {
         data: {
           patientId: f.patient.id,
           departmentId: f.department.id,

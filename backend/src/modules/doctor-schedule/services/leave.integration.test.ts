@@ -2,10 +2,12 @@ import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 import * as dbConfig from '../../../config/prisma.js';
 import { testDatabaseUrl } from '../../../../scripts/test-db-config.mjs';
 import { withRollback } from '../../../../tests/helpers/transaction.js';
-import { createMedicalStaffFixture } from '../../../../tests/helpers/medical-staff-fixture.js';
+import {
+  createMedicalStaffFixture,
+  createScheduledAppointmentFixture,
+} from '../../../../tests/helpers/medical-staff-fixture.js';
 import { listLeaves, createLeave } from './leave.service.js';
 import { parseLeaveRange, parseLeaveRequest } from '../validations/leave.validation.js';
-import { lockDoctorWork } from '../../medical-staff/services/doctor-work-lock.js';
 import express from 'express';
 import request from 'supertest';
 import { createAccountProvider } from '../../../common/middlewares/account-provider.js';
@@ -95,7 +97,7 @@ describe('휴진 조회·등록', () => {
         status: 'ACTIVE' as const,
         departmentId: f.department.id,
       };
-      const appointment = await tx.appointment.create({
+      const appointment = await createScheduledAppointmentFixture(tx, {
         data: {
           patientId: f.patient.id,
           doctorAccountId: f.doctor.id,
@@ -163,7 +165,7 @@ describe('휴진 조회·등록', () => {
     });
   });
 
-  it('의사 잠금을 먼저 보유한 예약이 저장되면 동시 휴진 신청은 거부한다', async () => {
+  it('직접 삽입한 예약이 트리거로 의사 잠금을 잡으면 동시 휴진 신청은 거부한다', async () => {
     const f = await createMedicalStaffFixture(prisma);
     const doctor = {
       id: f.doctor.id,
@@ -180,21 +182,18 @@ describe('휴진 조회·등록', () => {
     });
     vi.spyOn(dbConfig, 'getPrismaClient').mockReturnValue(prisma);
     try {
+      await prisma.doctorAvailability.create({
+        data: { doctorAccountId: f.doctor.id, dayOfWeek: 3, startMinute: 0, endMinute: 20 },
+      });
       const booking = prisma.$transaction(async (tx) => {
-        await lockDoctorWork(tx, f.doctor.id);
-        await tx.appointment.create({
-          data: {
-            patientId: f.patient.id,
-            doctorAccountId: f.doctor.id,
-            departmentId: f.department.id,
-            registeredByAccountId: f.admin.id,
-            startsAt: new Date('2030-01-01T15:00:00Z'),
-          },
-        });
+        await tx.$executeRaw`INSERT INTO appointments
+          (id, patient_id, doctor_account_id, department_id, registered_by_account_id, starts_at)
+          VALUES (${f.patient.id}, ${f.patient.id}, ${f.doctor.id}, ${f.department.id}, ${f.admin.id},
+                  TIMESTAMPTZ '2030-01-01 15:00:00+00')`;
         locked();
         await untilRelease;
       });
-      await acquired;
+      await Promise.race([acquired, booking]);
       const result = expect(createLeave(doctor, '2030-01-02')).rejects.toMatchObject({
         code: 'LEAVE_HAS_BOOKING',
       });
@@ -214,6 +213,7 @@ describe('휴진 조회·등록', () => {
     } finally {
       release();
       await prisma.appointment.deleteMany({ where: { doctorAccountId: f.doctor.id } });
+      await prisma.doctorAvailability.deleteMany({ where: { doctorAccountId: f.doctor.id } });
       await prisma.doctorLeave.deleteMany({ where: { doctorAccountId: f.doctor.id } });
       await prisma.patient.delete({ where: { id: f.patient.id } });
       await prisma.doctor.delete({ where: { accountId: f.doctor.id } });

@@ -1,7 +1,10 @@
 import { afterAll, describe, expect, it } from 'vitest';
 import { createPrismaClient } from '../../../config/prisma.js';
 import { testDatabaseUrl } from '../../../../scripts/test-db-config.mjs';
-import { createMedicalStaffFixture } from '../../../../tests/helpers/medical-staff-fixture.js';
+import {
+  createMedicalStaffFixture,
+  createScheduledAppointmentFixture,
+} from '../../../../tests/helpers/medical-staff-fixture.js';
 import { withRollback } from '../../../../tests/helpers/transaction.js';
 import { hasPendingDoctorWork } from './doctor-work.service.js';
 
@@ -15,7 +18,7 @@ describe('의사의 미처리 업무 확인', () => {
   it('서울 기준 오늘 이후의 미접수 유효 예약은 미처리 업무다', async () => {
     await withRollback(prisma, async (tx) => {
       const f = await createMedicalStaffFixture(tx);
-      await tx.appointment.create({
+      await createScheduledAppointmentFixture(tx, {
         data: {
           patientId: f.patient.id,
           doctorAccountId: f.doctor.id,
@@ -37,8 +40,8 @@ describe('의사의 미처리 업무 확인', () => {
         departmentId: f.department.id,
         registeredByAccountId: f.admin.id,
       };
-      await tx.appointment.create({
-        data: { ...base, startsAt: new Date('2026-11-12T14:59:00Z') },
+      await createScheduledAppointmentFixture(tx, {
+        data: { ...base, startsAt: new Date('2026-11-12T14:40:00Z') },
       });
       await tx.appointment.create({
         data: {
@@ -73,7 +76,7 @@ describe('의사의 미처리 업무 확인', () => {
   it('완료된 진료의 접수와 연결 예약은 차단하지 않는다', async () => {
     await withRollback(prisma, async (tx) => {
       const f = await createMedicalStaffFixture(tx);
-      const appointment = await tx.appointment.create({
+      const appointment = await createScheduledAppointmentFixture(tx, {
         data: {
           patientId: f.patient.id,
           doctorAccountId: f.doctor.id,
