@@ -7,6 +7,7 @@ import {
 } from '../../medical-staff/services/doctor-work-lock.js';
 import { isAppointmentSlotAvailable } from '../../doctor-schedule/services/appointment-slots.service.js';
 import { appointmentSelect, toAppointment } from './appointment-query.service.js';
+import { rethrowAppointmentWriteError, slotUnavailable } from './appointment-write-errors.js';
 // APT-06: 완료 진료 담당 의사의 재진 예약을 진료의 접수에서 환자·과·의사를 가져와 생성한다.
 // 세션 등록자를 기록하고 의사·과 활성, 소속, 근무·휴진·예약 점유를 트랜잭션 안에서 재확인한다.
 export async function createFollowUp(actor: AccountContext, visitId: string, startsAt: Date) {
@@ -44,7 +45,7 @@ export async function createFollowUp(actor: AccountContext, visitId: string, sta
         account.doctor?.departmentId !== departmentId ||
         !(await isAppointmentSlotAvailable(tx, actor.id, startsAt))
       )
-        throw new AppError(409, 'SLOT_UNAVAILABLE', '선택한 시간에 예약할 수 없습니다.');
+        slotUnavailable();
       const row = await tx.appointment.create({
         data: {
           patientId,
@@ -58,15 +59,6 @@ export async function createFollowUp(actor: AccountContext, visitId: string, sta
       return toAppointment(row, 'DOCTOR');
     });
   } catch (error) {
-    if (
-      typeof error === 'object' &&
-      error !== null &&
-      'code' in error &&
-      error.code === 'P2002' &&
-      'meta' in error &&
-      /appointments_booked_doctor_time_key|doctor_account_id/.test(JSON.stringify(error.meta))
-    )
-      throw new AppError(409, 'SLOT_UNAVAILABLE', '선택한 시간에 예약할 수 없습니다.');
-    throw error;
+    rethrowAppointmentWriteError(error);
   }
 }

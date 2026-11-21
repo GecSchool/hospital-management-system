@@ -6,7 +6,10 @@ import { createAccountProvider } from '../../../common/middlewares/account-provi
 import * as prismaConfig from '../../../config/prisma.js';
 import { testDatabaseUrl } from '../../../../scripts/test-db-config.mjs';
 import { withRollback } from '../../../../tests/helpers/transaction.js';
-import { createMedicalStaffFixture } from '../../../../tests/helpers/medical-staff-fixture.js';
+import {
+  createMedicalStaffFixture,
+  createScheduledAppointmentFixture,
+} from '../../../../tests/helpers/medical-staff-fixture.js';
 import { changeAccountStatus } from '../services/account-status.service.js';
 import { changeDepartment } from '../../medical-staff/services/medical-staff.service.js';
 import { lockDoctorWork } from '../../medical-staff/services/doctor-work-lock.js';
@@ -126,13 +129,13 @@ describe('계정 상태와 의료진 소속 변경 API', () => {
     try {
       const booking = prisma.$transaction(async (tx) => {
         await lockDoctorWork(tx, f.doctor.id);
-        await tx.appointment.create({
+        await createScheduledAppointmentFixture(tx, {
           data: {
             patientId: f.patient.id,
             doctorAccountId: f.doctor.id,
             departmentId: f.department.id,
             registeredByAccountId: f.admin.id,
-            startsAt: new Date(Date.now() + 86400000),
+            startsAt: new Date(Math.ceil(Date.now() / 1_200_000) * 1_200_000 + 86_400_000),
           },
         });
         locked();
@@ -149,6 +152,7 @@ describe('계정 상태와 의료진 소속 변경 API', () => {
     } finally {
       release();
       await prisma.appointment.deleteMany({ where: { doctorAccountId: f.doctor.id } });
+      await prisma.doctorAvailability.deleteMany({ where: { doctorAccountId: f.doctor.id } });
       await prisma.patient.delete({ where: { id: f.patient.id } });
       await prisma.doctor.delete({ where: { accountId: f.doctor.id } });
       await prisma.nurse.delete({ where: { accountId: f.nurse.id } });

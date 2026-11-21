@@ -3,7 +3,11 @@ import { PrismaClient } from '../generated/prisma/client.js';
 
 export function createPrismaClient(databaseUrl: string): PrismaClient {
   if (!databaseUrl) throw new Error('DATABASE_URL이 필요합니다.');
-  return new PrismaClient({ adapter: new PrismaPg({ connectionString: databaseUrl }) });
+  const url = new URL(databaseUrl);
+  const options = url.searchParams.get('options');
+  // The pg adapter reads timestamptz as UTC without applying the server's offset.
+  url.searchParams.set('options', [options, '-c TimeZone=UTC'].filter(Boolean).join(' '));
+  return new PrismaClient({ adapter: new PrismaPg({ connectionString: url.toString() }) });
 }
 
 let client: PrismaClient | undefined;

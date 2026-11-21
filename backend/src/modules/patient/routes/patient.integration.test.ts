@@ -4,7 +4,10 @@ import { createApp } from '../../../app.js';
 import * as dbConfig from '../../../config/prisma.js';
 import { createAccountProvider } from '../../../common/middlewares/account-provider.js';
 import { testDatabaseUrl } from '../../../../scripts/test-db-config.mjs';
-import { createMedicalStaffFixture } from '../../../../tests/helpers/medical-staff-fixture.js';
+import {
+  createMedicalStaffFixture,
+  createScheduledAppointmentFixture,
+} from '../../../../tests/helpers/medical-staff-fixture.js';
 import { withRollback } from '../../../../tests/helpers/transaction.js';
 import { createHash, randomInt } from 'node:crypto';
 import { createPatient } from '../services/patient.service.js';
@@ -264,7 +267,7 @@ describe('환자 등록 및 검색', () => {
         },
       );
       expect((await request(app).get(`/api/v1/patients/${f.patient.id}`)).status).toBe(403);
-      await tx.appointment.create({
+      await createScheduledAppointmentFixture(tx, {
         data: {
           patientId: f.patient.id,
           doctorAccountId: f.doctor.id,
@@ -292,7 +295,7 @@ describe('환자 등록 및 검색', () => {
           doctor: { create: { departmentId: f.department.id } },
         },
       });
-      await tx.appointment.create({
+      await createScheduledAppointmentFixture(tx, {
         data: {
           patientId: f.patient.id,
           doctorAccountId: otherDoctor.id,

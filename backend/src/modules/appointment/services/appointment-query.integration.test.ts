@@ -2,7 +2,10 @@ import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 import * as dbConfig from '../../../config/prisma.js';
 import { testDatabaseUrl } from '../../../../scripts/test-db-config.mjs';
 import { withRollback } from '../../../../tests/helpers/transaction.js';
-import { createMedicalStaffFixture } from '../../../../tests/helpers/medical-staff-fixture.js';
+import {
+  createMedicalStaffFixture,
+  createScheduledAppointmentFixture,
+} from '../../../../tests/helpers/medical-staff-fixture.js';
 import { getAppointment, listAppointments } from './appointment-query.service.js';
 import { parseAppointmentQuery } from '../validations/appointment-query.validation.js';
 import type { AccountContext } from '../../../common/middlewares/auth.js';
@@ -25,7 +28,7 @@ describe('예약 목록·상세', () => {
       };
       const initial = new Date('2030-01-01T00:00:00+09:00').getTime();
       for (let i = 0; i < 6; i++) {
-        const a = await tx.appointment.create({
+        const a = await createScheduledAppointmentFixture(tx, {
           data: {
             ...base,
             startsAt: new Date(initial + i * 1200000),
@@ -57,7 +60,9 @@ describe('예약 목록·상세', () => {
             });
         }
       }
-      await tx.appointment.create({ data: { ...base, startsAt: new Date(initial - 1200000) } });
+      await createScheduledAppointmentFixture(tx, {
+        data: { ...base, startsAt: new Date(initial - 1200000) },
+      });
       const actor: AccountContext = {
         id: f.admin.id,
         role: 'STAFF',
@@ -94,7 +99,7 @@ describe('예약 목록·상세', () => {
       vi.spyOn(dbConfig, 'getPrismaClient').mockReturnValue(
         tx as ReturnType<typeof dbConfig.getPrismaClient>,
       );
-      const a = await tx.appointment.create({
+      const a = await createScheduledAppointmentFixture(tx, {
         data: {
           patientId: f.patient.id,
           doctorAccountId: f.doctor.id,

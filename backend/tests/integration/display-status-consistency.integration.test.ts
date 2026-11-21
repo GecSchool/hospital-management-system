@@ -11,7 +11,10 @@ import { doctorScheduleRouter } from '../../src/modules/dashboard/routes/doctor-
 import { staffDashboardRouter } from '../../src/modules/dashboard/routes/staff-dashboard.routes.js';
 import { patientRouter } from '../../src/modules/patient/routes/patient.routes.js';
 import { testDatabaseUrl } from '../../scripts/test-db-config.mjs';
-import { createMedicalStaffFixture } from '../helpers/medical-staff-fixture.js';
+import {
+  createMedicalStaffFixture,
+  createScheduledAppointmentFixture,
+} from '../helpers/medical-staff-fixture.js';
 import { withRollback } from '../helpers/transaction.js';
 
 const prisma = dbConfig.createPrismaClient(testDatabaseUrl());
@@ -71,7 +74,7 @@ describe('목록과 대시보드의 화면 상태·역할별 환자 정보', () 
         doctorAccountId: f.doctor.id,
         departmentId: f.department.id,
       };
-      const appointment = await tx.appointment.create({
+      const appointment = await createScheduledAppointmentFixture(tx, {
         data: {
           ...fields,
           registeredByAccountId: f.admin.id,
@@ -256,7 +259,7 @@ describe('목록과 대시보드의 화면 상태·역할별 환자 정보', () 
           cancelledByAccountId: f.admin.id,
         },
       });
-      const booked = await tx.appointment.create({
+      const booked = await createScheduledAppointmentFixture(tx, {
         data: {
           ...fields,
           registeredByAccountId: f.admin.id,

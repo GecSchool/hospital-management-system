@@ -2,7 +2,10 @@ import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 import * as dbConfig from '../../../config/prisma.js';
 import { testDatabaseUrl } from '../../../../scripts/test-db-config.mjs';
 import { withRollback } from '../../../../tests/helpers/transaction.js';
-import { createMedicalStaffFixture } from '../../../../tests/helpers/medical-staff-fixture.js';
+import {
+  createMedicalStaffFixture,
+  createScheduledAppointmentFixture,
+} from '../../../../tests/helpers/medical-staff-fixture.js';
 import { getDoctorSchedule, getDoctorScheduleParts } from './doctor-schedule.service.js';
 import { parseDoctorScheduleQuery } from '../validations/doctor-schedule.validation.js';
 
@@ -43,7 +46,7 @@ describe('의사 일정의 확정된 조회 항목', () => {
         ],
       });
       await tx.doctorLeave.create({
-        data: { doctorAccountId: f.doctor.id, date: new Date('2030-01-01T00:00:00Z') },
+        data: { doctorAccountId: f.doctor.id, date: new Date('2030-01-02T00:00:00Z') },
       });
       const fields = {
         patientId: f.patient.id,
@@ -59,7 +62,7 @@ describe('의사 일정의 확정된 조회 항목', () => {
           doctor: { create: { departmentId: f.department.id } },
         },
       });
-      await tx.appointment.create({
+      await createScheduledAppointmentFixture(tx, {
         data: {
           ...fields,
           doctorAccountId: anotherDoctor.id,
@@ -78,7 +81,7 @@ describe('의사 일정의 확정된 조회 항목', () => {
         data: {
           ...fields,
           registeredByAccountId: f.admin.id,
-          startsAt: new Date('2029-12-31T15:00:00Z'),
+          startsAt: new Date('2030-01-01T00:00:00Z'),
         },
       });
       const reception = await tx.reception.create({
@@ -88,16 +91,19 @@ describe('의사 일정의 확정된 조회 항목', () => {
           receivedAt: new Date('2030-01-01T14:59:59Z'),
         },
       });
-      await tx.appointment.create({
+      await createScheduledAppointmentFixture(tx, {
         data: {
           ...fields,
           registeredByAccountId: f.admin.id,
-          startsAt: new Date('2030-01-01T15:00:00Z'),
+          startsAt: new Date('2030-01-02T15:00:00Z'),
         },
       });
-      const result = await getDoctorScheduleParts(actor, '2030-01-01', '2030-01-01');
-      expect(result.availability).toEqual([{ dayOfWeek: 2, startTime: '09:00', endTime: '13:00' }]);
-      expect(result.leaves).toEqual([{ date: '2030-01-01' }]);
+      const result = await getDoctorScheduleParts(actor, '2030-01-01', '2030-01-02');
+      expect(result.availability).toEqual([
+        { dayOfWeek: 2, startTime: '09:00', endTime: '13:00' },
+        { dayOfWeek: 4, startTime: '00:00', endTime: '00:20' },
+      ]);
+      expect(result.leaves).toEqual([{ date: '2030-01-02' }]);
       expect(result.appointments).toHaveLength(1);
       expect(result.appointments[0]).toMatchObject({
         id: appointment.id,
@@ -188,7 +194,7 @@ describe('의사 일정의 확정된 조회 항목', () => {
         },
       });
       await tx.visit.create({
-        data: { receptionId: nextReception.id, startedAt: new Date('2030-01-01T15:00:00Z') },
+        data: { receptionId: nextReception.id, startedAt: new Date('2030-01-02T15:00:00Z') },
       });
       const result = await getDoctorSchedule(doctor, '2030-01-01', '2030-01-01');
       expect(result.receptions).toHaveLength(0);

@@ -2,7 +2,10 @@ import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 import * as dbConfig from '../../../config/prisma.js';
 import { testDatabaseUrl } from '../../../../scripts/test-db-config.mjs';
 import { withRollback } from '../../../../tests/helpers/transaction.js';
-import { createMedicalStaffFixture } from '../../../../tests/helpers/medical-staff-fixture.js';
+import {
+  createMedicalStaffFixture,
+  createScheduledAppointmentFixture,
+} from '../../../../tests/helpers/medical-staff-fixture.js';
 import {
   createAppointment,
   changeAppointmentTime,
@@ -129,7 +132,7 @@ describe('예약 등록·시간 변경·취소', () => {
         status: 409,
         code: 'APPOINTMENT_ALREADY_RECEIVED',
       });
-      const old = await tx.appointment.create({
+      const old = await createScheduledAppointmentFixture(tx, {
         data: {
           patientId: f.patient.id,
           departmentId: f.department.id,

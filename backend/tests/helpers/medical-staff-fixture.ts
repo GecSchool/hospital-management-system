@@ -1,5 +1,26 @@
 import { randomUUID } from 'node:crypto';
+import { businessDate, dayOfWeek } from '../../src/common/utils/time.js';
 import type { Prisma } from '../../src/generated/prisma/client.js';
+
+// Tests that start with a reservation also need the weekly slot that made it bookable.
+export async function createScheduledAppointmentFixture(
+  tx: Prisma.TransactionClient,
+  { data }: { data: Prisma.AppointmentUncheckedCreateInput & { startsAt: Date } },
+) {
+  const { doctorAccountId, startsAt } = data;
+  const midnight = new Date(`${businessDate(startsAt)}T00:00:00+09:00`);
+  const startMinute = (startsAt.getTime() - midnight.getTime()) / 60_000;
+  const day = { doctorAccountId, dayOfWeek: dayOfWeek(startsAt) };
+  const availability = await tx.doctorAvailability.findFirst({
+    where: { ...day, startMinute: { lte: startMinute }, endMinute: { gte: startMinute + 20 } },
+  });
+  if (!availability) {
+    await tx.doctorAvailability.create({
+      data: { ...day, startMinute, endMinute: startMinute + 20 },
+    });
+  }
+  return tx.appointment.create({ data });
+}
 
 export async function createMedicalStaffFixture(tx: Prisma.TransactionClient) {
   const id = randomUUID().replaceAll('-', '');

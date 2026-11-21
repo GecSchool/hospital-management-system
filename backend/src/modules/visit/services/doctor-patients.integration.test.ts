@@ -2,7 +2,10 @@ import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 import * as dbConfig from '../../../config/prisma.js';
 import { testDatabaseUrl } from '../../../../scripts/test-db-config.mjs';
 import { withRollback } from '../../../../tests/helpers/transaction.js';
-import { createMedicalStaffFixture } from '../../../../tests/helpers/medical-staff-fixture.js';
+import {
+  createMedicalStaffFixture,
+  createScheduledAppointmentFixture,
+} from '../../../../tests/helpers/medical-staff-fixture.js';
 import { listDoctorPatients } from './doctor-patients.service.js';
 import { parseDoctorPatientsQuery } from '../validations/doctor-patients.validation.js';
 const prisma = dbConfig.createPrismaClient(testDatabaseUrl());
@@ -20,14 +23,14 @@ describe('의사 환자 목록', () => {
         doctorAccountId: f.doctor.id,
         departmentId: f.department.id,
       };
-      const appointment = await tx.appointment.create({
+      const appointment = await createScheduledAppointmentFixture(tx, {
         data: {
           ...base,
           registeredByAccountId: f.admin.id,
           startsAt: new Date('2030-01-01T09:00:00+09:00'),
         },
       });
-      const received = await tx.appointment.create({
+      const received = await createScheduledAppointmentFixture(tx, {
         data: {
           ...base,
           registeredByAccountId: f.admin.id,

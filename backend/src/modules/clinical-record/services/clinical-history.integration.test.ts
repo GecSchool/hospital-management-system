@@ -2,7 +2,10 @@ import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 import * as db from '../../../config/prisma.js';
 import { testDatabaseUrl } from '../../../../scripts/test-db-config.mjs';
 import { withRollback } from '../../../../tests/helpers/transaction.js';
-import { createMedicalStaffFixture } from '../../../../tests/helpers/medical-staff-fixture.js';
+import {
+  createMedicalStaffFixture,
+  createScheduledAppointmentFixture,
+} from '../../../../tests/helpers/medical-staff-fixture.js';
 import { getClinicalHistory } from './clinical-history.service.js';
 import { decodeCursor } from '../../../common/utils/cursor.js';
 const prisma = db.createPrismaClient(testDatabaseUrl());
@@ -31,7 +34,7 @@ describe('환자 진료 이력', () => {
       await expect(getClinicalHistory(f.patient.id, actor, { limit: 2 })).rejects.toMatchObject({
         status: 403,
       });
-      await tx.appointment.create({
+      await createScheduledAppointmentFixture(tx, {
         data: {
           patientId: f.patient.id,
           doctorAccountId: f.doctor.id,
