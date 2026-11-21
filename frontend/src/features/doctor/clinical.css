@@ -74,10 +74,26 @@
   border-top: var(--border-default);
   padding-top: 24px;
 }
-.clinical-nursing nav {
-  display: flex;
-  gap: 24px;
-  flex-wrap: wrap;
+.clinical-record-meta {
+  color: var(--color-text-secondary);
+  font: var(--font-body-s);
+}
+.clinical-nursing-records {
+  display: grid;
+  margin-top: 16px;
+}
+.clinical-nursing-records .clinical-link {
+  padding: 12px 0;
+  border-bottom: var(--border-default);
+  color: var(--color-text-secondary);
+  text-align: left;
+}
+.clinical-nursing-records .clinical-link:hover,
+.clinical-nursing-records [aria-pressed='true'] {
+  color: var(--color-brand-primary);
+}
+.clinical-nursing-records [aria-pressed='true'] {
+  border-bottom-color: var(--color-brand-primary);
 }
 @media (max-width: 1100px) {
   .clinical-columns {
@@ -108,8 +124,10 @@
   text-underline-offset: 4px;
 }
 .clinical-reason {
-  border-top: var(--border-default);
-  margin-top: 24px;
+  margin-top: 28px;
+}
+.clinical-panel .clinical-reason h3 {
+  margin-top: 0;
 }
 .doctor-scope .clinical-patient-list {
   max-width: 1016px;
