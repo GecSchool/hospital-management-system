@@ -139,7 +139,7 @@
 | SCH-01 | `GET /doctors/{doctorId}/availability` | DOCTOR(본인), STAFF, NURSE(본인 과) | → `{doctorId,intervalMinutes:20,weeklySlots:[{dayOfWeek,startTime,endTime}]}` | 요일 0=일요일~6=토요일의 매주 반복 구간을 반환한다. 구간은 요일 숫자와 시작 시각 오름차순이며 연속 구간은 합쳐 반환한다. 간호사는 본인 과. 관리 기능의 관리자 접근은 §12. |
 | SCH-02 | `PUT /doctors/me/availability` | DOCTOR | `{weeklySlots:[{dayOfWeek,startTime,endTime}]}` → `200 {doctorId,intervalMinutes:20,weeklySlots:[...]}` | 본인의 주간 시간표 전체 교체. 앞으로 남은 유효 예약과 충돌하면 `409 AVAILABILITY_CONFLICT`이며 기존 시간표를 유지한다. 날짜·시간 경계 및 구간 규칙은 아래 참조. 성공 시 정규화된 전체 시간표를 반환한다. |
 | SCH-03 | `GET /doctors/{doctorId}/leaves` | DOCTOR(본인), STAFF, NURSE(본인 과) | query `from`, `to` → 휴진 목록 | 날짜 범위 필수이며 시작일은 종료일 이하. |
-| SCH-04 | `POST /doctors/me/leaves` | DOCTOR | `{date}` → `201 {date}` | 서울 기준 과거 날짜는 `400 VALIDATION_ERROR`. 같은 의사·날짜에 유효한 예약이 있으면 `409 LEAVE_HAS_BOOKING`, 현장 접수가 있으면 진료 완료 여부와 관계없이 `409 LEAVE_HAS_WALK_IN`. 중복 휴진은 `409 CONFLICT`. 일자 전체 휴진 기준. |
+| SCH-04 | `POST /doctors/me/leaves` | DOCTOR | `{date}` → `201 {date}` | 서울 기준 과거 날짜는 `400 VALIDATION_ERROR`. 취소되지 않은 예약이 해당 날짜에 있으면 `409 LEAVE_HAS_BOOKING`; 중복 휴진 `409`. 일자 전체 휴진 기준. |
 | SCH-05 | `GET /doctors/{doctorId}/appointment-slots` | STAFF, NURSE(본인 과), DOCTOR(본인 재진) | query `date`, `excludeAppointmentId?` → `{date,intervalMinutes:20,slots:[{startsAt,available,reason?}]}` | 예약 변경 시 STAFF가 변경할 본인 대상 예약 ID를 전달하면 해당 예약만 점유 검사에서 제외. 예약의 의사와 경로 의사 일치 및 변경 권한·유효 상태를 서버에서 확인한다. 다른 예약·휴진·진료 가능 시간 제약은 그대로 적용. 일반 예약 조회는 생략. 같은 의사·날짜·시간의 유효 예약은 한 건만 가능. |
 
 
@@ -164,6 +164,11 @@
 ```
 
 성공 시 `data`는 `{ "doctorId": "doc_01", "intervalMinutes": 20, "weeklySlots": [...] }`, `meta`는 `null`이다. 12:00부터 13:00 전까지는 진료 불가다.
+
+### 3.2 휴진과 현장 접수 충돌
+
+- `SCH-04`는 같은 의사의 해당 서울 업무 날짜에 현장 접수가 있으면 진료 완료 여부와 관계없이 `409 LEAVE_HAS_WALK_IN`을 반환한다. 중복 휴진은 `409 CONFLICT`다.
+- `REC-01`의 현장 접수는 당일에 해당 의사의 휴진이 등록돼 있으면 `409 DOCTOR_ON_LEAVE`를 반환한다.
 
 ## 4. 환자
 
