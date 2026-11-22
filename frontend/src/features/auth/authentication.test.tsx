@@ -37,7 +37,7 @@ function start(
 }
 function fillPasswords(
   invitation: boolean,
-  password = 'synthetic-new-value',
+  password = 'synthetic-new-value-1',
   confirmation = password,
 ) {
   fireEvent.change(
@@ -158,7 +158,7 @@ describe.each([
       submitPassword(invitation);
       await screen.findByText(notice);
       expect(screen.getByTestId('location').textContent).toBe('/login');
-      expect(document.body.textContent).not.toContain('synthetic-new-value');
+      expect(document.body.textContent).not.toContain('synthetic-new-value-1');
       const verify = invitation
         ? service.verifyInvitation
         : service.verifyPasswordReset;
@@ -201,7 +201,7 @@ describe.each([
     await screen.findByRole('heading', { name: title });
     submitPassword(invitation);
     expect(screen.getAllByRole('alert')).toHaveLength(2);
-    fillPasswords(invitation, 'synthetic-new-value', 'different');
+    fillPasswords(invitation, 'synthetic-new-value-1', 'different');
     submitPassword(invitation);
     expect(screen.getByRole('alert').textContent).toBe(
       '비밀번호가 일치하지 않습니다.',
@@ -209,21 +209,81 @@ describe.each([
     expect(service.acceptInvitation).not.toHaveBeenCalled();
     expect(service.confirmPasswordReset).not.toHaveBeenCalled();
   });
-  it('recovers from a verification server error with explicit retry', async () => {
+  it('explains the password rules and blocks invalid submissions', async () => {
     const service = createMockAuthService({ latencyMs: 0 });
-    if (invitation)
-      service.verifyInvitation = vi
-        .fn(service.verifyInvitation)
-        .mockRejectedValueOnce(new ApiError('SERVER_ERROR', 'test', 500));
-    else
-      service.verifyPasswordReset = vi
-        .fn(service.verifyPasswordReset)
-        .mockRejectedValueOnce(new ApiError('SERVER_ERROR', 'test', 500));
+    const submit = vi.fn();
+    if (invitation) service.acceptInvitation = submit;
+    else service.confirmPasswordReset = submit;
     start(`${path}?token=${validToken}`, service);
-    await screen.findByRole('alert');
-    fireEvent.click(screen.getByRole('button', { name: '다시 시도' }));
     await screen.findByRole('heading', { name: title });
+    const input = screen.getByLabelText(
+      invitation ? '비밀번호' : '새 비밀번호',
+    );
+    const rule =
+      '비밀번호는 영문과 숫자를 모두 포함해 8~128자로 입력해 주세요.';
+    expect(
+      document.getElementById(input.getAttribute('aria-describedby')!)
+        ?.textContent,
+    ).toBe(rule);
+
+    for (const password of [
+      'Abc1234',
+      '12345678',
+      'noDigits',
+      'A1'.repeat(65),
+    ]) {
+      fillPasswords(invitation, password);
+      submitPassword(invitation);
+      expect(screen.getByRole('alert').textContent).toBe(rule);
+    }
+    expect(submit).not.toHaveBeenCalled();
   });
+  it('shows password rules for a server validation error instead of a connection error', async () => {
+    const service = createMockAuthService({ latencyMs: 0 });
+    const reject = vi.fn().mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 400, data: { error: { code: 'VALIDATION_ERROR' } } },
+    });
+    if (invitation) service.acceptInvitation = reject;
+    else service.confirmPasswordReset = reject;
+    start(`${path}?token=${validToken}`, service);
+    await screen.findByRole('heading', { name: title });
+    fillPasswords(invitation);
+    submitPassword(invitation);
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      '비밀번호는 영문과 숫자를 모두 포함해 8~128자로 입력해 주세요.',
+    );
+  });
+  it.each([
+    {
+      status: 429,
+      code: 'RATE_LIMITED',
+      message: '요청이 많습니다. 잠시 후 다시 시도해 주세요.',
+    },
+    {
+      status: 500,
+      code: 'SERVER_ERROR',
+      message: '서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.',
+    },
+  ])(
+    'shows the verification error for $status and retries',
+    async ({ status, code, message }) => {
+      const service = createMockAuthService({ latencyMs: 0 });
+      if (invitation)
+        service.verifyInvitation = vi
+          .fn(service.verifyInvitation)
+          .mockRejectedValueOnce(new ApiError(code, 'test', status));
+      else
+        service.verifyPasswordReset = vi
+          .fn(service.verifyPasswordReset)
+          .mockRejectedValueOnce(new ApiError(code, 'test', status));
+      start(`${path}?token=${validToken}`, service);
+      await screen.findByRole('alert');
+      expect(screen.getByText(message)).toBeTruthy();
+      fireEvent.click(screen.getByRole('button', { name: '다시 시도' }));
+      await screen.findByRole('heading', { name: title });
+    },
+  );
   it('shows expired state when the link expires during submission', async () => {
     start(`${path}?token=demo-${kind}-expires-on-submit`);
     await screen.findByRole('heading', { name: title });
@@ -318,6 +378,31 @@ describe.each([
     await screen.findByRole('heading', { name: '로그인' });
   });
 });
+
+it.each([
+  [
+    'ACCOUNT_EMAIL_DUPLICATE',
+    '이미 등록된 계정입니다. 시스템 관리자에게 문의해 주세요.',
+  ],
+  [
+    'CONFLICT',
+    '초대받은 진료과를 사용할 수 없습니다. 시스템 관리자에게 문의해 주세요.',
+  ],
+])(
+  'explains the reason for a rejected invitation (%s)',
+  async (code, message) => {
+    const service = createMockAuthService({ latencyMs: 0 });
+    service.acceptInvitation = vi.fn().mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 409, data: { error: { code } } },
+    });
+    start('/invitations/accept?token=demo-invitation-doctor', service);
+    await screen.findByRole('heading', { name: '계정 설정' });
+    fillPasswords(true);
+    submitPassword(true);
+    expect((await screen.findByRole('alert')).textContent).toBe(message);
+  },
+);
 
 it.each(['DOCTOR', 'ADMIN', 'STAFF', 'NURSE'])(
   'displays synthetic %s invitation information',

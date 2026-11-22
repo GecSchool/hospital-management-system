@@ -2,15 +2,17 @@
 
 ## 프로젝트 소개
 
-병원의 환자 정보와 진료 예약, 접수 현황, 진료 기록을 하나의 시스템에서 관리하기 위한 데이터베이스 응용 프로젝트입니다. 전화나 방문으로 요청받은 예약과 현장 접수부터 환자 호출, 진료 및 간호 기록까지의 업무 흐름을 웹 애플리케이션으로 연결하는 것을 목표로 합니다.
+병원의 환자 정보, 진료 예약, 접수 현황, 진료·간호 기록을 관리하는 데이터베이스 응용 프로젝트입니다. 전화나 방문으로 요청받은 예약과 현장 접수부터 환자 호출, 입실 확인, 진료 완료까지의 업무 흐름을 웹 애플리케이션으로 연결합니다.
 
-병원 직원, 의사, 간호사, 시스템 관리자는 각자의 업무에 맞는 기능을 이용합니다. 현재 화면 디자인과 업무 흐름을 바탕으로 개발을 준비하고 있으며, API 명세와 데이터 모델을 구체화할 예정입니다.
+병원 직원, 의사, 간호사, 시스템 관리자는 각자의 업무에 맞는 화면과 API를 이용합니다.
 
-## 예정 기술 스택
+## 기술 스택
 
 - 프론트엔드: React, TypeScript
 - 백엔드: Node.js, Express, TypeScript
-- 데이터베이스: PostgreSQL
+- 데이터베이스: PostgreSQL, Prisma
+- 세션 및 일회성 링크: Redis
+- 초대·재설정 메일: SMTP
 
 ## 개발 환경
 
@@ -33,11 +35,11 @@ npm run dev:backend   # http://localhost:3000
 
 백엔드 서버를 실행한 뒤 [Swagger UI](http://localhost:3000/api-docs/)에서 API 목록과 요청·응답 스키마를 확인할 수 있습니다. 명세 원본은 `backend/openapi.yaml`이며, 서버에서도 `/api-docs/openapi.yaml`로 제공합니다.
 
-업무별 API 설명은 [API 명세 초안](docs/api-spec.md), 공통으로 구현할 업무 로직은 [백엔드 공통 구현 가이드](docs/backend-shared-logic.md)를 참고하세요.
+업무별 요청·응답과 권한은 [API 명세](docs/api-spec.md), 공통 업무 규칙은 [백엔드 공통 구현 가이드](docs/backend-shared-logic.md)를 참고하세요.
 
 ## 데이터베이스 모델
 
-Prisma 스키마와 초기 PostgreSQL 마이그레이션은 `backend/prisma/`에 있습니다. 설정과 제약조건, 아직 구현이 필요한 사항은 [데이터베이스 모델 가이드](docs/database-model.md)를 참고하세요.
+Prisma 스키마와 PostgreSQL 마이그레이션은 `backend/prisma/`에 있습니다. 테이블, 제약조건, 인덱스, 예약 일정 검증 트리거는 [데이터베이스 모델 가이드](docs/database-model.md)를 참고하세요.
 
 개발용 DB를 준비하고 `backend/.env.example`을 참고해 `backend/.env`에 `DATABASE_URL`을 설정한 뒤 저장소 루트에서 실행합니다.
 
@@ -58,13 +60,13 @@ DB 통합 테스트는 기존 개발 DB와 별도의 로컬 PostgreSQL 데이터
 
 ## 백엔드 공통 구조
 
-`backend/src/modules/`에서 도메인별로 먼저 나누고, 도메인 안은 `routes/`, `controllers/`, `services/`, `validations/`로 구분합니다. 업무 라우터는 구현 후 `backend/src/routes/index.ts`에 등록합니다. `예정` 주석이 있는 파일은 미구현 뼈대이므로 라우트가 동작하지 않습니다. 환경 설정·Prisma 생성은 `src/config/`, 공통 오류·응답·미들웨어·도구는 `src/common/`에 둡니다. 구조와 담당 API는 [백엔드 아키텍처](docs/backend-architecture.md)를 참고하세요.
+`backend/src/modules/`에서 도메인별로 먼저 나누고, 도메인 안은 `routes/`, `controllers/`, `services/`, `validations/`로 구분합니다. 업무 라우터는 `backend/src/routes/index.ts`에서 연결합니다. 환경 설정·Prisma 생성은 `src/config/`, 공통 오류·응답·미들웨어·도구는 `src/common/`에 둡니다. 구조와 담당 API는 [백엔드 아키텍처](docs/backend-architecture.md)를 참고하세요.
 
 Prisma 클라이언트 생성 위치는 `backend/src/generated/prisma/`이며 Git에 포함하지 않습니다. 클론하거나 스키마를 변경한 뒤 `npm run prisma:generate --workspace backend`를 먼저 실행해야 빌드 및 Prisma를 사용하는 테스트를 실행할 수 있습니다.
 
 ## 인증과 계정 준비
 
-로그인은 서버 세션과 `HttpOnly` 쿠키를 사용합니다. 서버는 세션에 계정 ID만 보관하고 매 요청마다 계정의 상태·역할·소속을 DB에서 다시 확인합니다. 세션 만료, 링크 유효 시간, 실패 횟수 제한 등 정한 값과 이유는 [인증 설계](docs/auth-design.md)를 참고하세요.
+로그인은 서버 세션과 `HttpOnly` 쿠키를 사용합니다. 세션에는 계정 ID, 로그인 시각, 세션 무효화 번호를 보관합니다. 서버는 보호된 요청마다 계정의 상태·역할·소속을 DB에서 확인합니다. 세션 만료, 링크 유효 시간, 실패 횟수 제한은 [인증 설계](docs/auth-design.md)를 참고하세요.
 
 세션과 초대·비밀번호 재설정 링크는 Redis에, 메일은 SMTP 서버로 보냅니다. `backend/.env.example`의 인증 항목을 참고해 `backend/.env`에 설정합니다. 로컬 개발에서 `REDIS_URL`과 `SMTP_HOST`를 비워 두면 Redis 대신 서버 메모리를 쓰고, 메일은 보내지 않고 서버 콘솔에 링크를 출력합니다. 운영 환경(`NODE_ENV=production`)에서는 필요한 값이 빠지면 서버가 시작되지 않습니다.
 
@@ -82,8 +84,6 @@ npm run db:seed:dev --workspace backend
 
 `src/app.ts`가 내보내는 기본 `app`은 인증을 연결하지 않은 앱이라 보호된 요청을 모두 `401`로 거부합니다. 실제 서버는 `src/server.ts`에서 세션·저장소·메일을 연결해 앱을 만듭니다. 업무 API 테스트는 가상 인증 제공자를 넘기고, 인증 테스트는 메모리 저장소와 가짜 메일 발송을 연결합니다.
 
-현재 명세는 업무 규칙과 화면을 토대로 작성한 **초안**입니다. Swagger UI에 표시되는 업무 API가 구현되었다는 뜻은 아닙니다. 구현되지 않은 API는 문서의 요청 실행 기능으로 호출할 수 없습니다. 일부 응답 필드와 미결 업무 정책은 구현 전에 팀에서 확정해야 합니다.
-
 ## 디렉터리 구성
 
 - `frontend/`: React와 TypeScript를 사용하는 웹 화면
@@ -91,7 +91,14 @@ npm run db:seed:dev --workspace backend
 
 ## 개발 현황
 
-프로젝트 초기 준비 단계입니다. DB 스키마와 마이그레이션을 작성했으며, 실제 업무 API와 주민등록번호 보호 처리 등은 아직 구현하지 않았습니다.
+역할별 웹 화면과 OpenAPI에 정의된 업무 API 58개가 구현되어 있습니다.
+
+- **직원**은 환자를 등록·조회·수정하고, 진료 예약과 당일 접수를 관리합니다.
+- **의사**는 진료 일정·가능 시간·휴진을 관리하고, 진료 이력 조회, 진료 완료·기록 정정, 재진 예약을 처리합니다.
+- **간호사**는 본인 진료과의 예약을 등록하고, 접수 환자의 호출·입실 확인과 간호 기록 작성·정정을 담당합니다.
+- **관리자**는 계정 초대·활성 상태·비밀번호 재설정 요청과 진료과·의료진 소속을 관리합니다.
+
+주민등록번호는 AES-256-GCM 암호문으로 저장하고 HMAC 조회값으로 중복을 검사합니다. 직원 상세 화면에는 마스킹된 번호를 표시하며, 환자 등록 후 번호 변경은 서버에서 제한합니다.
 
 ## 커밋 컨벤션
 

@@ -44,8 +44,8 @@ async function mount(service: StaffService, path: string) {
     </MemoryRouter>,
   );
 }
-async function fixture() {
-  const service = createMockStaffService({ latencyMs: 0 });
+async function fixture(count?: number) {
+  const service = createMockStaffService({ latencyMs: 0, count });
   const patient = await service.create({
     name: '가상UI환자',
     residentNumber: '900101-0000000',
@@ -132,6 +132,85 @@ it('shows an empty first-visit history without enabling completion', async () =>
   );
   expect(screen.queryByRole('button', { name: '진료 완료' })).toBeNull();
 });
+it('keeps another attending doctor’s clinical record read-only', async () => {
+  const f = await fixture(0);
+  const otherDoctor = { ...doctor, id: 'demo-doctor', doctorId: 'demo-doctor' };
+  vi.setSystemTime(timestamp('2026-11-07'));
+  const reception = await f.service.intake.create({
+    patientId: f.patient.id,
+    departmentId: 'demo-internal',
+    doctorId: otherDoctor.doctorId,
+  });
+  await f.nurse.call(reception.id);
+  const visit = await f.nurse.enter(reception.id);
+  await f.service
+    .clinical(async () => otherDoctor)
+    .complete(visit.id, {
+      symptoms: '',
+      diagnosis: '[가상] 다른 의사의 진단',
+      opinion: '',
+    });
+  vi.setSystemTime(timestamp('2026-11-09'));
+
+  await mount(f.service, `/doctor/visits/${f.records[1].visit.id}`);
+  const panel = within(
+    await screen.findByRole('region', { name: '진료 기록 본문' }),
+  );
+  expect(
+    await panel.findByRole('link', { name: /정정 기록 추가/ }),
+  ).toBeTruthy();
+  expect(panel.getByRole('link', { name: /재진 예약/ })).toBeTruthy();
+
+  fireEvent.click(
+    await screen.findByRole('link', { name: /2026.11.07.*다른 의사의 진단/ }),
+  );
+  await panel.findByText('[가상] 다른 의사의 진단');
+  expect(panel.queryByRole('link', { name: /정정 기록 추가/ })).toBeNull();
+  expect(panel.queryByRole('link', { name: /재진 예약/ })).toBeNull();
+});
+it('resets the selected nursing record when the clinical history switches receptions', async () => {
+  const f = await fixture();
+  const nursing = f.service.nursing(async () => mockAccounts.NURSE);
+  await nursing.create(f.records[0].visit.receptionId, {
+    content: '[가상] 첫 진료 간호',
+  });
+  vi.setSystemTime(new Date('2026-11-09T03:01:00Z'));
+  await nursing.create(f.records[0].visit.receptionId, {
+    content: '[가상] 직접 선택한 첫 진료 간호',
+  });
+  await nursing.create(f.records[1].visit.receptionId, {
+    content: '[가상] 다음 진료 간호',
+  });
+
+  await mount(f.service, `/doctor/visits/${f.records[0].visit.id}`);
+  const firstPanel = within(
+    await screen.findByRole('region', { name: '간호 기록' }),
+  );
+  fireEvent.click(await firstPanel.findByRole('button', { name: /12:01/ }));
+  await firstPanel.findByText('[가상] 직접 선택한 첫 진료 간호');
+
+  fireEvent.click(
+    await screen.findByRole('link', { name: /2026.11.06.*최근 진단/ }),
+  );
+  await screen.findByText('[가상] 다음 진료 간호');
+  expect(screen.queryByText('[가상] 직접 선택한 첫 진료 간호')).toBeNull();
+});
+it('shows a cancelled booking without a clinical record link in the list and weekly schedule', async () => {
+  const f = await fixture();
+  await f.service.booking.cancel(f.appointment.id);
+  const app = await mount(f.service, '/doctor/patients?date=2026-11-09');
+  const table = within(await screen.findByRole('table', { name: '담당 환자' }));
+  const row = await table.findByRole('row', { name: /가상UI환자.*예약 취소/ });
+  expect(within(row).queryByRole('link')).toBeNull();
+  app.unmount();
+
+  await mount(f.service, '/doctor/schedule?date=2026-11-09');
+  const calendar = within(
+    await screen.findByRole('table', { name: '주간 시간표' }),
+  );
+  expect(await calendar.findByText('가상UI환자 · 취소')).toBeTruthy();
+  expect(calendar.queryByRole('link', { name: /가상UI환자/ })).toBeNull();
+});
 it('keeps a clinical draft while browsing history and guards leaving the visit', async () => {
   const f = await fixture();
   const r = await f.service.intake.create({ appointmentId: f.appointment.id });
@@ -156,7 +235,9 @@ it('keeps a clinical draft while browsing history and guards leaving the visit',
   const historyDialog = await screen.findByRole('dialog', {
     name: '작성 중인 진료를 나갈까요?',
   });
-  fireEvent.click(within(historyDialog).getByRole('button', { name: '계속 작성' }));
+  fireEvent.click(
+    within(historyDialog).getByRole('button', { name: '계속 작성' }),
+  );
   fireEvent.click(screen.getByRole('link', { name: /2026.11.09.*진료 중/ }));
   expect((screen.getByLabelText('증상') as HTMLTextAreaElement).value).toBe(
     '[가상] 미저장 내용',
@@ -181,7 +262,11 @@ it('shows a user-facing confirmation for incomplete clinical fields', async () =
   await mount(f.service, `/doctor/visits/${visit.id}`);
   await screen.findByLabelText('증상');
   fireEvent.click(screen.getByRole('button', { name: '진료 완료' }));
-  expect(await screen.findByText('입력하지 않은 항목이 있습니다. 이대로 진료를 완료하시겠습니까?')).toBeTruthy();
+  expect(
+    await screen.findByText(
+      '입력하지 않은 항목이 있습니다. 이대로 진료를 완료하시겠습니까?',
+    ),
+  ).toBeTruthy();
   expect(screen.queryByText(/현재 명세에는/)).toBeNull();
 });
 it('switches between today, future bookings and completed visits using the calendar', async () => {
@@ -193,22 +278,34 @@ it('switches between today, future bookings and completed visits using the calen
   });
   await mount(service, '/doctor/schedule/day?date=2026-11-09');
   const today = await screen.findByRole('table', { name: '오늘의 시간표' });
-  expect(within(today).getByRole('link', { name: `${patient.name} 예약` })).toBeTruthy();
+  expect(
+    within(today).getByRole('link', { name: `${patient.name} 예약` }),
+  ).toBeTruthy();
   expect(within(today).queryByText(walkIn.patient.name)).toBeNull();
   const arrivals = screen.getByRole('region', { name: '오늘 내원 환자' });
   expect(within(arrivals).getByText(walkIn.patient.name)).toBeTruthy();
 
   fireEvent.click(screen.getByRole('button', { name: '다음 기간' }));
-  expect(await screen.findByRole('heading', { name: '예약 환자' })).toBeTruthy();
+  expect(
+    await screen.findByRole('heading', { name: '예약 환자' }),
+  ).toBeTruthy();
   expect(screen.queryByRole('heading', { name: '내원 환자' })).toBeNull();
   expect(screen.getByRole('button', { name: '휴진 신청' })).toBeTruthy();
 
   fireEvent.click(screen.getByRole('button', { name: /선택 날짜/ }));
   const calendar = screen.getByRole('group', { name: '달력' });
-  fireEvent.click(within(calendar).getByRole('button', { name: /2026년 11월 6일/ }));
-  const completed = await screen.findByRole('region', { name: '진료 완료 환자' });
+  fireEvent.click(
+    within(calendar).getByRole('button', { name: /2026년 11월 6일/ }),
+  );
+  const completed = await screen.findByRole('region', {
+    name: '진료 완료 환자',
+  });
   expect(within(completed).getByText('12:00')).toBeTruthy();
-  expect(within(completed).getByRole('link', { name: '보기 ›' }).getAttribute('href')).toBe(`/doctor/visits/${records[1].visit.id}`);
+  expect(
+    within(completed)
+      .getByRole('link', { name: '보기 ›' })
+      .getAttribute('href'),
+  ).toBe(`/doctor/visits/${records[1].visit.id}`);
   expect(screen.getByRole('table', { name: '진료 시간표' })).toBeTruthy();
   expect(screen.queryByRole('heading', { name: '예약 환자' })).toBeNull();
   expect(screen.queryByRole('button', { name: '휴진 신청' })).toBeNull();
@@ -225,7 +322,11 @@ it('shows three patients in the same daily slot and keeps waiting patients in ar
   vi.setSystemTime(new Date('2026-11-09T14:04:00+09:00'));
   const visit = await f.nurse.enter(started.id);
   vi.setSystemTime(new Date('2026-11-09T14:08:00+09:00'));
-  await f.clinical.complete(visit.id, { symptoms: '증상', diagnosis: '진단', opinion: '소견' });
+  await f.clinical.complete(visit.id, {
+    symptoms: '증상',
+    diagnosis: '진단',
+    opinion: '소견',
+  });
   const nextPatient = await f.service.create({
     name: '세 번째 가상 환자',
     residentNumber: '900102-0000000',
@@ -249,14 +350,24 @@ it('shows three patients in the same daily slot and keeps waiting patients in ar
   const grid = await screen.findByRole('table', { name: '오늘의 시간표' });
   const row = within(grid).getByRole('row', { name: /^14:00/ });
   expect(within(row).getAllByRole('link')).toHaveLength(3);
-  expect(within(row).getByRole('link', { name: `${f.patient.name} 예약` })).toBeTruthy();
-  const visitLink = within(row).getByRole('link', { name: `${started.patient.name} 진료 완료` });
+  expect(
+    within(row).getByRole('link', { name: `${f.patient.name} 예약` }),
+  ).toBeTruthy();
+  const visitLink = within(row).getByRole('link', {
+    name: `${started.patient.name} 진료 완료`,
+  });
   expect(visitLink.getAttribute('href')).toBe(`/doctor/visits/${visit.id}`);
   expect(within(visitLink).getByText('14:04')).toBeTruthy();
-  const nextLink = within(row).getByRole('link', { name: `${nextPatient.name} 진료 중` });
+  const nextLink = within(row).getByRole('link', {
+    name: `${nextPatient.name} 진료 중`,
+  });
   expect(within(nextLink).getByText('14:12')).toBeTruthy();
   expect(within(grid).queryByText(waiting.patient.name)).toBeNull();
-  expect(within(screen.getByRole('region', { name: '오늘 내원 환자' })).getByText(waiting.patient.name)).toBeTruthy();
+  expect(
+    within(screen.getByRole('region', { name: '오늘 내원 환자' })).getByText(
+      waiting.patient.name,
+    ),
+  ).toBeTruthy();
 });
 it('guards correction cancel/close and leaves immutable versions intact', async () => {
   const f = await fixture();

@@ -25,10 +25,12 @@ export function ClinicalRecordPanel({
   service,
   record,
   base,
+  canManage,
 }: {
   service: ClinicalService;
   record: ClinicalRecord;
   base: (string | null | undefined)[];
+  canManage: boolean;
 }) {
   const [selected, setSelected] = useState<number | null>(null);
   const query = useQuery({
@@ -67,20 +69,22 @@ export function ClinicalRecordPanel({
       ) : (
         <Loading />
       )}
-      <div className="clinical-record-actions">
-        <Link
-          className="clinical-link"
-          to={`/doctor/records/${encodeURIComponent(record.id)}/correct`}
-        >
-          정정 기록 추가 ›
-        </Link>
-        <Link
-          className="clinical-link"
-          to={`/doctor/visits/${encodeURIComponent(record.visitId)}/follow-up`}
-        >
-          재진 예약 ›
-        </Link>
-      </div>
+      {canManage && (
+        <div className="clinical-record-actions">
+          <Link
+            className="clinical-link"
+            to={`/doctor/records/${encodeURIComponent(record.id)}/correct`}
+          >
+            정정 기록 추가 ›
+          </Link>
+          <Link
+            className="clinical-link"
+            to={`/doctor/visits/${encodeURIComponent(record.visitId)}/follow-up`}
+          >
+            재진 예약 ›
+          </Link>
+        </div>
+      )}
     </>
   );
 }
