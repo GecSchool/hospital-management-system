@@ -16,7 +16,7 @@
 ### 1.1 경로와 인증
 
 - Base URL: `/api/v1`. 기존 개발용 `/api/health`는 별도 상태 확인 경로다.
-- 인증 방식 제안: 서버 세션을 `HttpOnly`, `Secure`(HTTPS), `SameSite` 설정 쿠키로 전달한다. 로그인 성공 시 세션 ID를 교체하고, 로그아웃과 계정 비활성화 시 세션을 무효화한다. 운영환경 HTTPS, 실제 쿠키 설정과 CSRF 방어 방식은 프론트·백엔드 배포 구조에 맞춰 확정한다.
+- 서버 세션은 `connect.sid` 쿠키를 사용한다. `HttpOnly`, `SameSite=Lax`를 적용하고 HTTPS에서는 `Secure`를 설정한다. 로그인 성공 시 세션 ID를 교체한다. 로그아웃은 현재 세션을, 비밀번호 재설정은 해당 계정의 기존 세션을 무효화한다. 비활성 계정의 보호된 요청은 거부하며 계정 상태 변경은 세션을 폐기하지 않는다. 세션 및 링크의 유효기간은 [인증 설계](auth-design.md)를 따른다.
 - 세션 인증과 더불어 각 요청에서 현재 계정의 활성 상태, 역할, 소속과 대상 리소스 접근 범위를 확인한다. ID를 알고 있다는 사실만으로 진료·간호 기록을 열람할 수 없다.
 - 공개 API는 로그인, 초대 검증·수락 및 비밀번호 재설정 토큰 검증·수락으로 한정한다.
 - 이메일은 로그인 식별자이며 서버에서 공백과 대소문자 처리 정책을 일관되게 적용한다.
@@ -109,18 +109,18 @@
 
 | ID | 메서드 · 경로 | 권한 | 요청 / 성공 | 주요 실패·규칙 |
 |---|---|---|---|---|
-| AUTH-01 | `POST /auth/login` | 공개 | body `{email,password}` → `200 AccountSummary`, 세션 쿠키 | `401 INVALID_CREDENTIALS`; 비활성은 `403 ACCOUNT_INACTIVE`; 시도 제한 `429`. |
-| AUTH-02 | `POST /auth/logout` | 공통 | body 없음 → `204` | 현재 세션 무효화. 이미 만료된 세션 처리의 멱등성은 구현 시 통일. |
+| AUTH-01 | `POST /auth/login` | 공개 | body `{email,password}` → `200 AccountSummary`, 세션 쿠키 | 형식 오류 `400 VALIDATION_ERROR`. 인증 실패 `401 INVALID_CREDENTIALS`, 비활성 `403 ACCOUNT_INACTIVE`, 시도 제한 `429 RATE_LIMITED`. |
+| AUTH-02 | `POST /auth/logout` | 공통 | body 없음 → `204` | 현재 세션을 종료하고 쿠키를 제거한다. 세션이 없거나 이미 만료된 경우에도 `204`. |
 | AUTH-03 | `GET /auth/me` | 공통 | → `200 AccountSummary` | `401`, `403 ACCOUNT_INACTIVE`. |
-| AUTH-04 | `POST /auth/invitations/verify` | 공개 | body `{token}` → `200 {name,email,role,department}` | `410 INVITATION_INVALID`; 토큰 원문을 URL에 다시 노출하지 않음. |
-| AUTH-05 | `POST /auth/invitations/accept` | 공개 | body `{token,password,passwordConfirm}` → `201 {accountId}` | 만료·사용됨 `410`; 불일치 `422 PASSWORD_MISMATCH`; 계정 중복 `409`. 초대 소비와 계정 생성의 실패 복구 필요. |
-| AUTH-06 | `POST /auth/password-resets/verify` | 공개 | body `{token}` → `200 {valid:true}` | `410 RESET_LINK_INVALID`. |
-| AUTH-07 | `POST /auth/password-resets/confirm` | 공개 | body `{token,password,passwordConfirm}` → `204` | 일회성·만료 검증. 완료 후 기존 세션 무효화 권장. |
+| AUTH-04 | `POST /auth/invitations/verify` | 공개 | body `{token}` → `200 {name,email,role,department}` | 만료·사용 또는 진료과 삭제 `410 INVITATION_INVALID`, 요청 제한 `429 RATE_LIMITED`. |
+| AUTH-05 | `POST /auth/invitations/accept` | 공개 | body `{token,password,passwordConfirm}` → `201 {accountId}` | 만료·사용됨 `410 INVITATION_INVALID`, 비밀번호 불일치 `422 PASSWORD_MISMATCH`, 비밀번호 규칙 위반 `400 VALIDATION_ERROR`, 중복 이메일 또는 가입 시 진료과가 비활성·삭제된 경우 `409`, 요청 제한 `429 RATE_LIMITED`. |
+| AUTH-06 | `POST /auth/password-resets/verify` | 공개 | body `{token}` → `200 {valid:true}` | `410 RESET_LINK_INVALID`, `429 RATE_LIMITED`. |
+| AUTH-07 | `POST /auth/password-resets/confirm` | 공개 | body `{token,password,passwordConfirm}` → `204` | 완료 후 계정의 기존 세션을 무효화한다. 만료·사용 `410 RESET_LINK_INVALID`, 비밀번호 불일치 `422 PASSWORD_MISMATCH`, 비밀번호 규칙 위반 `400 VALIDATION_ERROR`, 요청 제한 `429 RATE_LIMITED`. |
 | ACC-01 | `GET /accounts` | ADMIN | query `name?`, `email?`, `role?`, `status?`, `page?`, `size?` → `AccountSummary[]` | 이름·이메일은 각각 독립 입력, 역할·상태는 선택. 모든 조건 선택 사항; 입력된 조건만 AND 적용하며 전체 생략 시 전체 계정 첫 페이지. 이름·이메일 부분 일치, 역할·상태 정확 일치. |
 | ACC-02 | `GET /accounts/{accountId}` | ADMIN | → `AccountSummary` | `404`. |
-| ACC-03 | `POST /account-invitations` | ADMIN | `{name,email,role,departmentId?}` → `200 {message}` | 의료진은 활성 진료과 필수. 관리자·직원은 소속 미입력. SMTP 서버의 발송 요청 수락을 기다린 뒤 성공 반환; 수신함 도착 보장은 아님. 실패 시 오류. 초대 수락 전 계정 미생성. |
-| ACC-04 | `PATCH /accounts/{accountId}/status` | ADMIN | `{status}` → `200 AccountSummary` | 마지막 활성 관리자 비활성화 `409 LAST_ACTIVE_ADMIN`. 오늘 이후의 미접수 유효 예약 또는 미완료 접수·진료가 있는 의사의 비활성화는 `409 DOCTOR_HAS_PENDING_WORK`. 과거의 미접수 예약은 차단하지 않는다. 본인 비활성화 시 세션 무효화. |
-| ACC-05 | `POST /accounts/{accountId}/password-reset` | ADMIN | → `200 {message}` | SMTP 서버의 발송 요청 수락 후 성공. 메일 실제 수신 보장은 아님. 대상에게만 일회성 링크를 발송하며 실패 시 오류를 반환한다. 비활성 계정에도 발송 및 비밀번호 재설정이 가능하나 계정 상태는 비활성으로 유지되며 로그인은 허용하지 않는다. |
+| ACC-03 | `POST /account-invitations` | ADMIN | `{name,email,role,departmentId?}` → `200 {message}` | 의료진은 활성 진료과 필수. 관리자·직원은 소속 미입력. SMTP 서버의 발송 요청 수락을 기다린 뒤 성공 반환; 수신함 도착 보장은 아님. 초대 수락 전 계정 미생성. 없는 진료과 `404`, 중복 이메일 또는 비활성 진료과 `409`, 메일 발송 실패 `503 MAIL_SEND_FAILED`. |
+| ACC-04 | `PATCH /accounts/{accountId}/status` | ADMIN | `{status}` → `200 AccountSummary` | 마지막 활성 관리자 비활성화 `409 LAST_ACTIVE_ADMIN`. 오늘 이후의 미접수 유효 예약 또는 미완료 접수·진료가 있는 의사의 비활성화는 `409 DOCTOR_HAS_PENDING_WORK`. 과거의 미접수 예약은 차단하지 않는다. 비활성 계정의 보호된 요청은 `403 ACCOUNT_INACTIVE`로 거부한다. 계정 상태 변경은 저장된 세션을 폐기하지 않는다. |
+| ACC-05 | `POST /accounts/{accountId}/password-reset` | ADMIN | → `200 {message}` | SMTP 서버의 발송 요청 수락 후 성공. 메일 실제 수신 보장은 아님. 대상에게만 일회성 링크를 발송한다. 없는 계정 `404`, 메일 발송 실패 `503 MAIL_SEND_FAILED`. 비활성 계정에도 발송 및 비밀번호 재설정이 가능하나 계정 상태는 비활성으로 유지되며 로그인은 허용하지 않는다. |
 
 마지막 활성 관리자 검사는 동시 요청에도 0명이 되지 않도록 트랜잭션에서 직렬화한다. 초대 승인 전 Redis 상태를 활성 계정 수에 포함하지 않는다.
 
@@ -128,11 +128,11 @@
 
 | ID | 메서드 · 경로 | 권한 | 요청 / 성공 | 주요 실패·규칙 |
 |---|---|---|---|---|
-| DEP-01 | `GET /departments` | 공통 | query `status?` → `DepartmentSummary[]` | 신규 예약·소속 선택은 활성 과만. ADMIN은 비활성 포함 가능. |
+| DEP-01 | `GET /departments` | 공통 | query `status?` → `DepartmentSummary[]` | 신규 예약·소속 선택은 활성 과만. ADMIN은 비활성 포함 가능하며 비관리자의 `status=INACTIVE` 요청은 `403 FORBIDDEN`. |
 | DEP-02 | `POST /departments` | ADMIN | `{name}` → `201 DepartmentSummary` | 이름 중복 `409 DEPARTMENT_NAME_DUPLICATE`. |
-| DEP-03 | `PATCH /departments/{departmentId}` | ADMIN | `{name}` → `200 DepartmentSummary` | 과거 접수는 당시 진료과 ID를 유지하되 조회 시 해당 과의 현재 이름을 표시한다. |
-| DEP-04 | `PATCH /departments/{departmentId}/status` | ADMIN | `{status}` → `200 DepartmentSummary` | 소속 의료진이 남으면 `409 DEPARTMENT_HAS_STAFF`. |
-| DEP-05 | `DELETE /departments/{departmentId}` | ADMIN | → `204` | 소속 의료진 또는 참조 이력 존재 시 `409 DEPARTMENT_IN_USE`. 참조 대상의 정확한 범위는 §12. |
+| DEP-03 | `PATCH /departments/{departmentId}` | ADMIN | `{name}` → `200 DepartmentSummary` | 과거 접수는 당시 진료과 ID를 유지하되 조회 시 해당 과의 현재 이름을 표시한다. 대상 없음 `404`, 이름 중복 `409 DEPARTMENT_NAME_DUPLICATE`. |
+| DEP-04 | `PATCH /departments/{departmentId}/status` | ADMIN | `{status}` → `200 DepartmentSummary` | 대상 없음 `404`. 소속 의료진이 남으면 `409 DEPARTMENT_HAS_STAFF`. |
+| DEP-05 | `DELETE /departments/{departmentId}` | ADMIN | → `204` | 대상 없음 `404`. 의사·간호사·예약·접수 중 하나라도 참조하면 `409 DEPARTMENT_IN_USE`. 취소된 예약도 포함한다. |
 | DEP-06 | `GET /departments/{departmentId}/medical-staff` | ADMIN | query `role?`, `page?`, `size?` → `AccountSummary[]` | 소속 의료진 번호형 페이지네이션과 공통 `meta` 제공. |
 | DEP-07 | `GET /departments/{departmentId}/doctors` | STAFF, NURSE, ADMIN | query `activeOnly?` → `DoctorSummary[]` | 간호사는 본인 진료과로 범위를 제한. `activeOnly=true`일 때 활성 의사만 반환하고, `false` 또는 생략 시 상태로 필터링하지 않는다. |
 | DEP-08 | `PATCH /medical-staff/{accountId}/department` | ADMIN | `{departmentId}` → 변경된 `AccountSummary` | 대상 과 활성 확인. 의사에게 오늘 이후의 미접수 유효 예약 또는 미완료 접수·진료가 있으면 `409 DOCTOR_HAS_PENDING_WORK`. 과거 미접수 예약은 차단하지 않는다. 과거 접수의 진료과는 당시 값 유지. |
@@ -140,7 +140,7 @@
 | SCH-02 | `PUT /doctors/me/availability` | DOCTOR | `{weeklySlots:[{dayOfWeek,startTime,endTime}]}` → `200 {doctorId,intervalMinutes:20,weeklySlots:[...]}` | 본인의 주간 시간표 전체 교체. 앞으로 남은 유효 예약과 충돌하면 `409 AVAILABILITY_CONFLICT`이며 기존 시간표를 유지한다. 날짜·시간 경계 및 구간 규칙은 아래 참조. 성공 시 정규화된 전체 시간표를 반환한다. |
 | SCH-03 | `GET /doctors/{doctorId}/leaves` | DOCTOR(본인), STAFF, NURSE(본인 과) | query `from`, `to` → 휴진 목록 | 날짜 범위 필수이며 시작일은 종료일 이하. |
 | SCH-04 | `POST /doctors/me/leaves` | DOCTOR | `{date}` → `201 {date}` | 서울 기준 과거 날짜는 `400 VALIDATION_ERROR`. 취소되지 않은 예약이 해당 날짜에 있으면 `409 LEAVE_HAS_BOOKING`; 중복 휴진 `409`. 일자 전체 휴진 기준. |
-| SCH-05 | `GET /doctors/{doctorId}/appointment-slots` | STAFF, NURSE(본인 과), DOCTOR(본인 재진) | query `date`, `excludeAppointmentId?` → `{date,intervalMinutes:20,slots:[{startsAt,available,reason?}]}` | 예약 변경 시 STAFF가 변경할 본인 대상 예약 ID를 전달하면 해당 예약만 점유 검사에서 제외. 예약의 의사와 경로 의사 일치 및 변경 권한·유효 상태를 서버에서 확인한다. 다른 예약·휴진·진료 가능 시간 제약은 그대로 적용. 일반 예약 조회는 생략. 같은 의사·날짜·시간의 유효 예약은 한 건만 가능. |
+| SCH-05 | `GET /doctors/{doctorId}/appointment-slots` | STAFF, NURSE(본인 과), DOCTOR(본인 재진) | query `date`, `excludeAppointmentId?` → `{date,intervalMinutes:20,slots:[{startsAt,available}]}` | 예약 변경 시 STAFF가 변경할 본인 대상 예약 ID를 전달하면 해당 예약만 점유 검사에서 제외. 예약의 의사와 경로 의사 일치 및 변경 권한·유효 상태를 서버에서 확인한다. 다른 예약·휴진·진료 가능 시간 제약은 그대로 적용. 일반 예약 조회는 제외 ID를 전달하지 않는다. 하루 분량의 20분 슬롯 72개를 반환하며, 불가 사유 코드는 제공하지 않는다. 같은 의사·날짜·시간의 유효 예약은 한 건만 가능. |
 
 
 ### 3.1 주간 진료 가능 시간 입력·저장 계약
@@ -170,7 +170,7 @@
 | ID | 메서드 · 경로 | 권한 | 요청 / 성공 | 주요 실패·규칙 |
 |---|---|---|---|---|
 | PAT-01 | `GET /patients` | STAFF, NURSE | `name?`, `birthDate?`, `phone?`, `patientNumber?`, `page?`, `size?` → `PatientSummary[]` | 연락처 검색은 하이픈을 무시하여 부분 일치한다. 간호사는 예약 환자 선택 시 전체 환자를 이름·생년월일·연락처로 검색할 수 있음. 조건 생략 시 전체 첫 페이지. 간호사에게 환자번호 검색·표시는 제공하지 않음. 예약은 본인 과에만 등록 가능. |
-| PAT-02 | `POST /patients` | STAFF | `{name,residentNumber,phone,...}` → `201 PatientDetail` | 주민등록번호·연락처 형식을 확인하며 주민등록번호 중복은 `409 RESIDENT_NUMBER_DUPLICATE`. 필수 추가 항목은 도메인 정의서 확정 후 지정. |
+| PAT-02 | `POST /patients` | STAFF | `{name,residentNumber,phone}` → `201 PatientDetail` | 주민등록번호·연락처 형식을 확인하며 주민등록번호 중복은 `409 RESIDENT_NUMBER_DUPLICATE`. 세 필드 모두 필수다. 생년월일은 서버가 주민등록번호에서 산출한다. |
 | PAT-03 | `GET /patients/{patientId}` | STAFF, DOCTOR, NURSE | → 역할별 `PatientDetail` 또는 필요한 축소 정보 | 의사는 허용된 진료·예약 맥락에서만, 간호사는 허용된 본인 과 업무 맥락에서만 조회. |
 | PAT-04 | `PATCH /patients/{patientId}` | STAFF | `{name?,phone?}` → `PatientDetail` | 응답은 마스킹. 주민등록번호는 등록 후 수정할 수 없으며 요청에 `residentNumber`가 포함되면 전체 요청을 `400 VALIDATION_ERROR`로 거부한다. |
 | PAT-07 | `GET /patients/{patientId}/visits` | STAFF | `page?`, `size?` → `[{visitId,patientId,department:{id,name},doctor:{id,name},completedAt,displayStatus}]` | 진료 본문 제외. 직원 재진 예약의 환자·진료과·의사 초기값에 사용; 이후 소속·활성 검사는 예약 시 다시 수행. |
@@ -190,7 +190,7 @@
 | APT-05 | `POST /appointments/{appointmentId}/cancel` | STAFF | 본문 없음 → `Appointment` | 유효 접수가 없는 예약만 취소; 접수 후 `409 APPOINTMENT_ALREADY_RECEIVED`. 취소 사유는 입력받지 않고 취소자·시각을 기록한다. |
 | APT-06 | `POST /visits/{visitId}/follow-up-appointments` | DOCTOR(해당 완료 진료 담당) | `{startsAt}` → `201 Appointment` | 진료 완료 후만 가능. 환자·의사·진료과는 진료→접수에서 결정하며 클라이언트가 선택·변경하지 않는다. 예약 시점에 진료 가능 시간, 휴진 및 동일 의사·시간의 유효 예약을 다시 검증하고 예약할 수 없으면 `409 SLOT_UNAVAILABLE`을 반환한다. 새 예약은 독립 예약이며 이전 진료 기록에 FK가 반드시 필요한 것은 아니다. |
 
-예약 변경 화면은 `APT-03`의 기존 시각을 선택 표시하고 값이 바뀌기 전에는 저장을 비활성화한다. 변경 대상 예약의 날짜에는 `SCH-05`에 `excludeAppointmentId`를 전달한다. 서버는 저장 시점에 점유 여부를 다시 검증한다.
+예약 변경 화면은 `APT-03`의 기존 시각을 선택 표시하고 값이 바뀌기 전에는 저장을 비활성화한다. 예약 변경 화면의 각 날짜 조회에서 `SCH-05`에 `excludeAppointmentId`를 전달한다. 해당 날짜에 변경 대상 예약이 있으면 그 예약만 점유 계산에서 제외한다. 서버는 저장 시점에 점유 여부를 다시 검증한다.
 
 같은 의사의 같은 날짜·시각에는 유효 예약을 한 건만 허용한다. 취소된 예약은 자리를 차지하지 않는다. 현장 접수는 예약 슬롯을 선택하거나 점유하지 않는다. 조회와 저장·변경 검증에 같은 기준을 적용한다.
 
@@ -246,7 +246,7 @@
 2. 직원 예약: `PAT-01/03` → `DEP-01/07` → `SCH-05` → `APT-01` → `APT-03`. 취소·시간 변경은 `APT-05/04`.
 3. 예약 접수: `APT-02/03` → `REC-01 {appointmentId}` → `REC-02`. 현장 접수는 환자 선택 후 `REC-01 {patientId,departmentId,doctorId}`.
 4. 간호사 호출: `REC-02` → `REC-05` 호출(같은 의사의 기존 호출 자동 해제) → `REC-07` 입실 확인 → 진료 중인 `Visit` 생성. 수동 호출 취소 없음.
-5. 의사 기록: `VIS-01` → 환자 선택 → `VIS-03` 및 필요 시 `VIS-05/06`, `NUR-01/03/04`. 접수 전 예약이나 접수 완료 상태에서도 이전 기록을 열람할 수 있으나 오늘 진료 기록 작성은 진료 중에만 가능.
+5. 의사 기록: `VIS-01` → 환자 선택 → `VIS-03` 및 필요 시 `VIS-05/06`, `NUR-01/03/04`. 접수 전 유효 예약과 접수 상태에서는 이전 기록을 열람할 수 있다. 취소 예약은 상태만 표시하고 기록 보기로 연결하지 않는다. 진료 중에만 연결된 진료 기록을 작성할 수 있으며, 다른 의사가 담당했던 진료는 열람만 가능하다. 진료 이력을 전환하면 간호 기록 선택도 대상 접수에 맞춰 초기화한다.
 6. 진료 완료·재진: `VIS-04` → `VIS-05` → `APT-06`(과·의사 고정). 예약 실패와 성공은 화면 안내.
 7. 간호 기록: `REC-02/03` → `NUR-06`(같은 환자·같은 과, 다른 접수 포함) → `NUR-02`(선택 접수에 저장) → `NUR-03/04/05`. 접수에 연결하므로 진료 전/완료 후 작성 가능.
 8. 의료진 및 진료과: `DEP-01/06/08` → `DEP-04/05`. 비활성화와 삭제의 제한 조건을 각각 확인.
@@ -373,12 +373,12 @@
 4. **예약 환자 검색:** 간호사는 전체 환자를 검색할 수 있으며 예약 등록은 본인 과만 가능, 변경·취소는 불가.
 5. **접수 담당 의사 변경:** 화면 범위에서 제외하며 접수 생성 후에는 담당 의사를 변경하지 않는다.
 6. **미내원·예약 우선순위:** 미내원 상태 및 예약 환자 자동 우선순위는 제공하지 않는다. 간호사가 호출 대상을 선택한다.
-7. **예약 시간 변경 화면:** `excludeAppointmentId`로 변경 대상 예약만 점유 검사에서 제외하고 현재 시각을 선택 표시한다. 변경이 없으면 저장 버튼을 비활성화한다. 예약 가능 시간의 `reason` 값 목록은 미정. 동일 의사·동일 시간에는 예약 한 건만 허용하고 현장 접수 인원까지 제한하지 않는다.
-8. **진료과 삭제:** 의료진 외 예약·접수·진료 이력 중 삭제 제한에 포함할 참조 범위 미정. 과 이름은 과거에도 현재 이름으로 표시.
+7. **예약 시간 변경 화면:** `excludeAppointmentId`로 변경 대상 예약만 점유 검사에서 제외하고 현재 시각을 선택 표시한다. 변경이 없으면 저장 버튼을 비활성화한다. 예약 가능 시간의 현재 응답에는 불가 사유 코드가 없다. 동일 의사·동일 시간에는 예약 한 건만 허용하고 현장 접수 인원까지 제한하지 않는다.
+8. **진료과 삭제:** 의사·간호사·예약·접수 중 하나라도 참조하면 삭제할 수 없다. 취소된 예약도 포함한다. 과 이름은 과거에도 현재 이름으로 표시한다.
 9. **의사 미처리 업무:** 오늘 이후 미접수 유효 예약 및 미완료 접수·진료가 있으면 계정 비활성화·소속 변경을 제한한다. 지난 날짜의 미접수 예약은 제한하지 않는다. 비활성 계정도 비밀번호를 재설정할 수 있으나 자동 활성화되지는 않는다.
-10. **환자 주민등록번호:** 중복 등록은 허용하지 않는다. 등록 후 주민등록번호는 수정할 수 없으며 수정 요청에 해당 필드를 포함하면 전체 요청을 거부한다. 응답은 마스킹한다. 추가 필수값은 미정이다.
+10. **환자 주민등록번호:** 중복 등록은 허용하지 않는다. 등록 후 주민등록번호는 수정할 수 없으며 수정 요청에 해당 필드를 포함하면 전체 요청을 거부한다. 응답은 마스킹한다. 등록 요청의 필수 입력은 이름·주민등록번호·연락처다.
 11. **관리자 목록·초대:** 별도 검색 조건과 활성 계정 집계는 확정. SMTP 요청 실패 후 재시도·Redis/DB 실패 복구는 구현 전에 정한다.
-12. **인증 세부:** 세션 저장소·만료·CSRF·실패 횟수·토큰 유효기간, 메일과 Redis/DB 간 실패 복구 정책 미정.
+12. **인증 세부:** 운영 세션과 일회성 링크는 Redis로 관리한다. 세션은 미사용 1시간·로그인 후 최대 12시간, 초대 링크는 72시간, 재설정 링크는 1시간 유효하다. 요청 제한과 쿠키 설정은 [인증 설계](auth-design.md)를 따른다.
 13. **기록 정정:** 진료 기록은 담당 의사만 정정한다. 간호 기록은 해당 접수의 진료과와 현재 소속이 일치하는 간호사라면 최초 작성자가 아니어도 정정할 수 있다. 최초 작성자는 유지하고 각 버전의 실제 작성자를 기록한다.
 14. **목록 응답 세부:** 진료과 목록과 의사 일간 환자 목록의 최대 반환량, 기록 조회 시 환자 접근 맥락 전달 방식은 구현 전 구체화한다.
 
