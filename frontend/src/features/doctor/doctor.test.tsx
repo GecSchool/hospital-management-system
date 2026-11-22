@@ -227,8 +227,7 @@ it('uses exact API paths, whole replacement body, date ranges and abort signal',
     signal: c.signal,
   });
 });
-async function ui(path: string) {
-  const { s } = setup();
+async function ui(path: string, s = setup().s) {
   const auth = createMockAuthService({ latencyMs: 0 });
   await auth.login({ identifier: 'doctor', password: '1234' });
   render(
@@ -240,15 +239,57 @@ async function ui(path: string) {
   );
   return s;
 }
+
+it.each(['/doctor/schedule', '/doctor/schedule/day'])(
+  'shows only a close button when the selected date is booked (%s)',
+  async (path) => {
+    const { s } = setup();
+    const booking = {
+      patientId: 'demo-patient-3',
+      departmentId: 'demo-internal',
+      doctorId: 'demo-doctor',
+    };
+    await s.booking.create({ ...booking, startsAt: `${date}T14:00:00+09:00` });
+    const cancelled = await s.booking.create({
+      ...booking,
+      startsAt: `${date}T14:20:00+09:00`,
+    });
+    await s.booking.cancel(cancelled.id);
+    await ui(`${path}?date=${date}`, s);
+    fireEvent.click(await screen.findByRole('button', { name: '휴진 신청' }));
+
+    const modal = within(await screen.findByRole('dialog'));
+    await modal.findByText('예약이 있는 날짜는 휴진할 수 없습니다.');
+    expect(modal.getByText('선택 날짜 예약 1건')).toBeTruthy();
+    expect(
+      modal.getAllByRole('button').map((button) => button.textContent),
+    ).toEqual(['닫기']);
+    fireEvent.click(modal.getByRole('button', { name: '닫기' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+  },
+);
+
 it('renders own weekly/day schedule, shifts dates, requests leave once and refreshes calendar', async () => {
-  const s = await ui('/doctor/schedule?date=2026-11-10');
+  const { s } = setup();
+  const cancelled = await s.booking.create({
+    patientId: 'demo-patient-3',
+    departmentId: 'demo-internal',
+    doctorId: 'demo-doctor',
+    startsAt: '2026-11-11T14:00:00+09:00',
+  });
+  await s.booking.cancel(cancelled.id);
+  await ui('/doctor/schedule?date=2026-11-10', s);
   await screen.findByRole('table', { name: '주간 시간표' });
   fireEvent.click(screen.getByRole('link', { name: '일간' }));
   await screen.findByRole('table', { name: '진료 시간표' });
   fireEvent.click(screen.getByRole('button', { name: '다음 기간' }));
-  expect(screen.getByRole('button', { name: /선택 날짜 2026년 11월 11일/ })).toBeTruthy();
+  expect(
+    screen.getByRole('button', { name: /선택 날짜 2026년 11월 11일/ }),
+  ).toBeTruthy();
   fireEvent.click(screen.getByRole('button', { name: '휴진 신청' }));
   const modal = await screen.findByRole('dialog');
+  expect(await within(modal).findByText('선택 날짜 예약 0건')).toBeTruthy();
+  expect(within(modal).getByRole('button', { name: '취소' })).toBeTruthy();
   const b = within(modal).getByRole('button', { name: '휴진 등록' });
   await waitFor(() => expect(b.hasAttribute('disabled')).toBe(false));
   fireEvent.click(b);

@@ -93,11 +93,17 @@ export async function createReception(actor: AccountContext, input: ReceptionCre
     });
     if (duplicate)
       throw new AppError(409, 'DUPLICATE_ACTIVE_RECEPTION', '당일 미완료 접수가 존재합니다.');
-    const row = await tx.reception.create({
-      data: { patientId, departmentId, doctorAccountId: doctorId, appointmentId, receivedAt: now },
-      select: receptionSelect,
-    });
-    return toReception(row, 'STAFF');
+    try {
+      const row = await tx.reception.create({
+        data: { patientId, departmentId, doctorAccountId: doctorId, appointmentId, receivedAt: now },
+        select: receptionSelect,
+      });
+      return toReception(row, 'STAFF');
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('receptions_doctor_leave_check:'))
+        throw new AppError(409, 'DOCTOR_ON_LEAVE', '휴진일에는 해당 의사에게 현장 접수할 수 없습니다.');
+      throw error;
+    }
   });
 }
 // REC-04: 직원은 간호기록·진료가 없는 접수만 의사 및 접수 행 잠금 아래 물리 삭제한다.

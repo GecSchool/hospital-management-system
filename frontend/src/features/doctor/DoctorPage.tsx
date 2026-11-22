@@ -100,6 +100,11 @@ function Session({ source }: { source: StaffService }) {
   const day =
     dayView && schedule.data ? dailySchedule(schedule.data, period) : null;
   const calendarItems = day?.items ?? allItems;
+  const selectedDateBookingCount = schedule.data?.appointments.filter(
+    (appointment) =>
+      appointment.status === 'BOOKED' && seoulDate(appointment.startsAt) === date,
+  ).length;
+  const hasBookedAppointments = (selectedDateBookingCount ?? 0) > 0;
   const write = useBookingWrite();
   useEffect(() => {
     if (editing && write.error && !write.pending) setAvailabilityError(true);
@@ -501,7 +506,11 @@ function Session({ source }: { source: StaffService }) {
       {leaving && (
         <Modal
           open
-          title="선택한 날짜를 휴진으로 등록할까요?"
+          title={
+            hasBookedAppointments
+              ? '휴진 신청'
+              : '선택한 날짜를 휴진으로 등록할까요?'
+          }
           onClose={() => {
             if (!write.pending) setLeaving(false);
           }}
@@ -512,42 +521,35 @@ function Session({ source }: { source: StaffService }) {
                 disabled={write.pending}
                 onClick={() => setLeaving(false)}
               >
-                취소
+                {hasBookedAppointments ? '닫기' : '취소'}
               </Button>
-              <Button
-                disabled={
-                  write.pending || !schedule.data || schedule.isFetching
-                }
-                onClick={() =>
-                  void write.run(
-                    () => service.leave(date),
-                    () => {
-                      setLeaving(false);
-                      setNotice('휴진을 등록했습니다.');
-                      void refresh();
-                    },
-                  )
-                }
-              >
-                {write.pending ? '등록 중…' : '휴진 등록'}
-              </Button>
+              {!hasBookedAppointments && (
+                <Button
+                  disabled={
+                    write.pending || !schedule.data || schedule.isFetching
+                  }
+                  onClick={() =>
+                    void write.run(
+                      () => service.leave(date),
+                      () => {
+                        setLeaving(false);
+                        setNotice('휴진을 등록했습니다.');
+                        void refresh();
+                      },
+                    )
+                  }
+                >
+                  {write.pending ? '등록 중…' : '휴진 등록'}
+                </Button>
+              )}
             </>
           }
         >
           <p>{date}</p>
-          <p>취소되지 않은 예약이 있으면 휴진 등록이 제한됩니다.</p>
-          {schedule.data && (
-            <p>
-              선택 날짜 예약{' '}
-              {
-                schedule.data.appointments.filter(
-                  (a) =>
-                    seoulDate(a.startsAt) === date && a.status !== 'CANCELLED',
-                ).length
-              }
-              건
-            </p>
+          {selectedDateBookingCount !== undefined && (
+            <p>선택 날짜 예약 {selectedDateBookingCount}건</p>
           )}
+          {hasBookedAppointments && <p>예약이 있는 날짜는 휴진할 수 없습니다.</p>}
           {write.error && <p role="alert">{write.error}</p>}
         </Modal>
       )}

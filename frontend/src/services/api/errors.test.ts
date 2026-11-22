@@ -25,6 +25,8 @@ describe('업무별 충돌 안내', () => {
       'DEPARTMENT_IN_USE',
       '소속 의료진 또는 예약·접수 이력이 있는 진료과는 삭제할 수 없습니다.',
     ],
+    ['DOCTOR_ON_LEAVE', '휴진일에는 해당 의사에게 현장 접수할 수 없습니다.'],
+    ['LEAVE_HAS_WALK_IN', '현장 접수가 있는 날짜는 휴진할 수 없습니다.'],
   ])('%s 오류를 구체적으로 표시한다', (code, message) => {
     expect(normalizeApiError(conflict(code)).message).toBe(message);
   });

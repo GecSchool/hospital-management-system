@@ -1799,7 +1799,7 @@ paths:
 
         **원본 계약:** `{date}` → `201 {date}`
 
-        **업무 규칙:** 서울 기준 과거 날짜는 `400 VALIDATION_ERROR`. 취소되지 않은 예약이 해당 날짜에 있으면 `409 LEAVE_HAS_BOOKING`; 중복 휴진 `409`. 일자 전체 휴진 기준.
+        **업무 규칙:** 서울 기준 과거 날짜는 `400 VALIDATION_ERROR`. 같은 의사·날짜에 유효한 예약이 있으면 `409 LEAVE_HAS_BOOKING`, 현장 접수가 있으면 진료 완료 여부와 관계없이 `409 LEAVE_HAS_WALK_IN`. 중복 휴진은 `409 CONFLICT`. 일자 전체 휴진 기준.
       parameters: []
       responses:
         "201":
@@ -1839,7 +1839,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
         "409":
-          description: "`409 LEAVE_HAS_BOOKING`"
+          description: "유효한 예약은 `LEAVE_HAS_BOOKING`, 현장 접수는 `LEAVE_HAS_WALK_IN`, 중복 휴진은 `CONFLICT`."
           content:
             application/json:
               schema:
@@ -2924,7 +2924,8 @@ paths:
         **원본 계약:** 예약 `{appointmentId}` 또는 현장 `{patientId,departmentId,doctorId}` → `201 Reception`
 
 
-        **업무 규칙:** 상호 배타. 예약 당일 접수만 허용. 동일 환자·의사·업무 날짜에 미완료 유효 접수가 있으면 `409 DUPLICATE_ACTIVE_RECEPTION`. 진료 완료
+        **업무 규칙:** 상호 배타. 예약 당일 접수만 허용. 서울 기준 당일이 담당 의사의 휴진일이면 현장 접수는 `409 DOCTOR_ON_LEAVE`.
+        동일 환자·의사·업무 날짜에 미완료 유효 접수가 있으면 `409 DUPLICATE_ACTIVE_RECEPTION`. 진료 완료
         후 재접수 및 다른 의사 접수 가능. 취소 예약·동일 예약 유효 접수 중복 거부. 삭제 후 재접수 가능.
       parameters: []
       responses:
@@ -2971,7 +2972,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
         "409":
-          description: "중복 미완료 접수는 DUPLICATE_ACTIVE_RECEPTION, 취소·당일 외 예약이나 비활성 대상은 CONFLICT."
+          description: "휴진일 현장 접수는 `DOCTOR_ON_LEAVE`, 중복 미완료 접수는 `DUPLICATE_ACTIVE_RECEPTION`, 취소·당일 외 예약이나 비활성 대상은 `CONFLICT`."
           content:
             application/json:
               schema:
