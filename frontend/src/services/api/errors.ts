@@ -25,6 +25,8 @@ export function normalizeApiError(error: unknown): ApiError {
       DEPARTMENT_IN_USE:
         '소속 의료진 또는 예약·접수 이력이 있는 진료과는 삭제할 수 없습니다.',
       RESIDENT_NUMBER_DUPLICATE: '이미 등록된 주민등록번호입니다.',
+      DOCTOR_ON_LEAVE: '휴진일에는 해당 의사에게 현장 접수할 수 없습니다.',
+      LEAVE_HAS_WALK_IN: '현장 접수가 있는 날짜는 휴진할 수 없습니다.',
     };
     const message =
       status === 401
