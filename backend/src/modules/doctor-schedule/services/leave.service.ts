@@ -32,7 +32,7 @@ export async function listLeaves(
   });
   return rows.map((row) => ({ date: row.date.toISOString().slice(0, 10) }));
 }
-// SCH-04: 동일 의사 잠금과 트랜잭션에서 서울 업무 날짜의 유효 예약을 검사하고 휴진을 생성한다. 중복/예약은 409다.
+// SCH-04: 의사별 잠금 아래 휴진을 생성하며, 같은 서울 업무 날짜의 예약·현장 접수 충돌을 409로 반환한다.
 export async function createLeave(actor: AccountContext, date: string): Promise<{ date: string }> {
   if (actor.role !== 'DOCTOR')
     throw new AppError(403, 'FORBIDDEN', '의사만 휴진을 신청할 수 있습니다.');
@@ -65,6 +65,10 @@ export async function createLeave(actor: AccountContext, date: string): Promise<
       return { date };
     });
   } catch (error) {
+    if (error instanceof Error && error.message.includes('doctor_leaves_walk_in_reception_check:'))
+      throw new AppError(409, 'LEAVE_HAS_WALK_IN', '현장 접수가 있는 날짜는 휴진할 수 없습니다.');
+    if (error instanceof Error && error.message.includes('doctor_leaves_booked_appointment_check:'))
+      throw new AppError(409, 'LEAVE_HAS_BOOKING', '예약이 있는 날짜는 휴진할 수 없습니다.');
     if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002')
       throw new AppError(409, 'CONFLICT', '이미 등록된 휴진일입니다.');
     throw error;

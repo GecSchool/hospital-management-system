@@ -42,7 +42,7 @@ describe('예약 가능 시간', () => {
           now: new Date('2031-01-01T00:00:00Z'),
         }),
       ).toBe(false);
-      await tx.appointment.create({
+      const appointment = await tx.appointment.create({
         data: {
           patientId: f.patient.id,
           doctorAccountId: f.doctor.id,
@@ -52,6 +52,10 @@ describe('예약 가능 시간', () => {
         },
       });
       expect(await isAppointmentSlotAvailable(tx, f.doctor.id, nine, { now })).toBe(false);
+      await tx.appointment.update({
+        where: { id: appointment.id },
+        data: { status: 'CANCELLED', cancelledAt: now, cancelledByAccountId: f.admin.id },
+      });
       await tx.doctorLeave.create({
         data: { doctorAccountId: f.doctor.id, date: new Date('2030-01-06T00:00:00Z') },
       });
