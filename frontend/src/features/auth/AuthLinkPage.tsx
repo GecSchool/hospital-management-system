@@ -5,7 +5,7 @@ import { Button } from '../../components/ui';
 import { normalizeApiError } from '../../services/api/errors';
 import { apiMode } from '../../services/mode';
 import { roleLabels } from '../../types/auth';
-import { authErrorMessage } from './authMessages';
+import { authLinkErrorMessage } from './authMessages';
 import type { AuthLinkKind, InvitationInfo } from './authService';
 import { MockAuthScenarios, MockNotice } from './MockAuthScenarios';
 import { PasswordForm } from './PasswordForm';
@@ -63,12 +63,13 @@ export function AuthLinkPage({ kind }: { kind: AuthLinkKind }) {
             setState({ status: 'ready', info: info || undefined });
         })
         .catch((reason) => {
-          if (!controller.signal.aborted)
-            setState(
-              normalizeApiError(reason).status === 410
-                ? { status: 'expired' }
-                : { status: 'error', message: authErrorMessage(reason) },
-            );
+          if (controller.signal.aborted) return;
+          const error = normalizeApiError(reason);
+          setState(
+            error.status === 410
+              ? { status: 'expired' }
+              : { status: 'error', message: authLinkErrorMessage(error) },
+          );
         });
     }
     return () => controller.abort();

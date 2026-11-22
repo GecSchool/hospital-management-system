@@ -1,6 +1,7 @@
 import { useRef, useState, type SubmitEvent } from 'react';
 import { Button, FormField, Input } from '../../components/ui';
-import { authErrorMessage } from './authMessages';
+import { passwordSubmissionErrorMessage } from './authMessages';
+import { passwordFieldError, passwordRuleMessage } from './passwordPolicy';
 import type { AuthLinkKind } from './authService';
 export function PasswordForm({
   kind,
@@ -23,7 +24,7 @@ export function PasswordForm({
     event.preventDefault();
     if (submitting.current) return;
     const next = {
-      password: password ? undefined : '비밀번호를 입력해 주세요.',
+      password: passwordFieldError(password),
       confirmation: !confirmation
         ? '비밀번호를 다시 입력해 주세요.'
         : password !== confirmation
@@ -38,7 +39,7 @@ export function PasswordForm({
     try {
       await onSubmit(password, confirmation);
     } catch (reason) {
-      setError(authErrorMessage(reason));
+      setError(passwordSubmissionErrorMessage(reason, kind));
     } finally {
       submitting.current = false;
       setPending(false);
@@ -57,6 +58,7 @@ export function PasswordForm({
         id="new-password"
         label={invitation ? '비밀번호' : '새 비밀번호'}
         error={errors.password}
+        hint={passwordRuleMessage}
       >
         <Input
           id="new-password"
