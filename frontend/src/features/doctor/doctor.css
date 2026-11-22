@@ -409,7 +409,7 @@
   margin-bottom: 16px;
   font: var(--font-heading-s);
 }
-.doctor-scope .doctor-patient-picker a {
+.doctor-scope .doctor-patient-picker-row {
   display: grid;
   grid-template-columns: 1fr 100px 90px;
   gap: 8px;
@@ -418,7 +418,7 @@
   text-decoration: none;
   font: var(--font-body-s);
 }
-.doctor-scope .doctor-patient-picker a + a {
+.doctor-scope .doctor-patient-picker-row + .doctor-patient-picker-row {
   border-top: var(--border-default);
 }
 .doctor-scope .doctor-patient-picker a:hover {

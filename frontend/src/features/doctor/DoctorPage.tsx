@@ -323,35 +323,41 @@ function Session({ source }: { source: StaffService }) {
                                 minutes(dateTimeLabel(a.time, true)) >= m &&
                                 minutes(dateTimeLabel(a.time, true)) < m + 20,
                             );
-                            const patientLinks = items.map((a) => (
-                              <Link
-                                className="doctor-patient"
-                                key={a.id}
-                                to={patientPath(a)}
-                                aria-label={
-                                  dayView
-                                    ? `${a.patient.name} ${statusLabels[a.status]}`
-                                    : undefined
-                                }
-                                state={{
-                                  returnTo: `${location.pathname}${location.search}`,
-                                }}
-                              >
-                                <span>
-                                  {a.patient.name}
-                                  {dayView &&
-                                    period === 'today' &&
-                                    !a.appointmentId && (
-                                      <small className="doctor-patient-start">
-                                        {dateTimeLabel(a.time, true)}
-                                      </small>
-                                    )}
+                            const patientLinks = items.map((a) =>
+                              a.status === 'CANCELLED' ? (
+                                <span key={a.id} className="doctor-patient">
+                                  {a.patient.name} · {statusLabels[a.status]}
                                 </span>
-                                {dayView && (
-                                  <span>{statusLabels[a.status]}</span>
-                                )}
-                              </Link>
-                            ));
+                              ) : (
+                                <Link
+                                  className="doctor-patient"
+                                  key={a.id}
+                                  to={patientPath(a)}
+                                  aria-label={
+                                    dayView
+                                      ? `${a.patient.name} ${statusLabels[a.status]}`
+                                      : undefined
+                                  }
+                                  state={{
+                                    returnTo: `${location.pathname}${location.search}`,
+                                  }}
+                                >
+                                  <span>
+                                    {a.patient.name}
+                                    {dayView &&
+                                      period === 'today' &&
+                                      !a.appointmentId && (
+                                        <small className="doctor-patient-start">
+                                          {dateTimeLabel(a.time, true)}
+                                        </small>
+                                      )}
+                                  </span>
+                                  {dayView && (
+                                    <span>{statusLabels[a.status]}</span>
+                                  )}
+                                </Link>
+                              ),
+                            );
                             return (
                               <td
                                 key={d}

@@ -88,6 +88,7 @@ function ClinicalSession({ source }: { source: StaffService }) {
   const requestedPatient = params.get('patient');
   const selectedPatient = patients.data?.find(
     (r) =>
+      r.displayStatus !== 'CANCELLED' &&
       r.patient.id === requestedPatient &&
       (!params.get('appointment') ||
         r.appointmentId === params.get('appointment')) &&
@@ -129,7 +130,10 @@ function ClinicalSession({ source }: { source: StaffService }) {
   });
   if (!visitId && !requestedPatient)
     return (
-      <section className="doctor-page clinical-patient-list" data-figma-node="92:1854">
+      <section
+        className="doctor-page clinical-patient-list"
+        data-figma-node="92:1854"
+      >
         <PageHeader title="환자 진료" />
         <div className="clinical-filters" role="group" aria-label="조회 조건">
           <ScheduleDatePicker
@@ -201,19 +205,20 @@ function ClinicalSession({ source }: { source: StaffService }) {
                 {
                   id: 'action',
                   header: <span className="sr-only">기록 보기</span>,
-                  render: (r) => (
-                    <Link
-                      className="clinical-link"
-                      to={
-                        r.visitId
-                          ? `/doctor/visits/${encodeURIComponent(r.visitId)}`
-                          : `/doctor/patients?${new URLSearchParams({ date, patient: r.patient.id, ...(r.appointmentId ? { appointment: r.appointmentId } : { reception: r.receptionId! }) })}`
-                      }
-                      state={{ returnTo: `/doctor/patients?date=${date}` }}
-                    >
-                      기록 보기 ›
-                    </Link>
-                  ),
+                  render: (r) =>
+                    r.displayStatus === 'CANCELLED' ? null : (
+                      <Link
+                        className="clinical-link"
+                        to={
+                          r.visitId
+                            ? `/doctor/visits/${encodeURIComponent(r.visitId)}`
+                            : `/doctor/patients?${new URLSearchParams({ date, patient: r.patient.id, ...(r.appointmentId ? { appointment: r.appointmentId } : { reception: r.receptionId! }) })}`
+                        }
+                        state={{ returnTo: `/doctor/patients?date=${date}` }}
+                      >
+                        기록 보기 ›
+                      </Link>
+                    ),
                 },
               ]}
             />
@@ -234,6 +239,13 @@ function ClinicalSession({ source }: { source: StaffService }) {
   const selectedHistory = history.data?.pages
     .flatMap((p) => p.data)
     .find((h) => h.clinicalRecordId === selectedRecord);
+  const recordDoctorId =
+    selectedHistory?.doctor.id ??
+    (visit.data && visit.data.id === record.data?.visitId
+      ? visit.data.doctor.id
+      : undefined);
+  const nursingReceptionId =
+    selectedHistory?.receptionId ?? visit.data?.receptionId;
   return (
     <section className="doctor-page" data-figma-node="30:84">
       <PageHeader
@@ -315,6 +327,9 @@ function ClinicalSession({ source }: { source: StaffService }) {
                 service={service}
                 record={record.data}
                 base={base}
+                canManage={
+                  !!recordDoctorId && recordDoctorId === user!.doctorId
+                }
               />
             ) : selectedRecord ? (
               <Loading />
@@ -325,16 +340,14 @@ function ClinicalSession({ source }: { source: StaffService }) {
                   : '완료된 진료 이력이 없습니다. 입실 확인 전에는 진료 기록을 작성할 수 없습니다.'}
               </p>
             )}
-            {recordIsKnown &&
-              (selectedHistory?.receptionId || visit.data?.receptionId) && (
-                <NursingRead
-                  service={nursing}
-                  receptionId={
-                    selectedHistory?.receptionId ?? visit.data!.receptionId
-                  }
-                  base={base}
-                />
-              )}
+            {recordIsKnown && nursingReceptionId && (
+              <NursingRead
+                key={nursingReceptionId}
+                service={nursing}
+                receptionId={nursingReceptionId}
+                base={base}
+              />
+            )}
           </div>
         </div>
       )}

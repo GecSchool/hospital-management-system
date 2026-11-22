@@ -60,20 +60,34 @@ export function SchedulePatientPicker({
         {time} · 환자 {items.length}명
       </h3>
       <nav aria-label="같은 시간의 환자">
-        {items.map((item) => (
-          <Link
-            key={item.id}
-            to={to(item)}
-            state={{ returnTo }}
-            onClick={onClose}
-          >
-            <span>{item.patient.name}</span>
-            <span>
-              {item.patient.birthDate ? dateLabel(item.patient.birthDate) : '—'}
-            </span>
-            <span>{statusLabels[item.status]}</span>
-          </Link>
-        ))}
+        {items.map((item) => {
+          const fields = (
+            <>
+              <span>{item.patient.name}</span>
+              <span>
+                {item.patient.birthDate
+                  ? dateLabel(item.patient.birthDate)
+                  : '—'}
+              </span>
+              <span>{statusLabels[item.status]}</span>
+            </>
+          );
+          return item.status === 'CANCELLED' ? (
+            <div className="doctor-patient-picker-row" key={item.id}>
+              {fields}
+            </div>
+          ) : (
+            <Link
+              className="doctor-patient-picker-row"
+              key={item.id}
+              to={to(item)}
+              state={{ returnTo }}
+              onClick={onClose}
+            >
+              {fields}
+            </Link>
+          );
+        })}
       </nav>
     </dialog>
   );

@@ -98,10 +98,33 @@ export function createMockClinical(source: {
         patient: nursePatient(r.patient),
       };
     }
-    function ownedRecord(id: string, doctorId: string) {
+    function requirePatientAccess(patientId: string, doctorId: string) {
+      const hasReception = source
+        .rows()
+        .some((r) => r.patient.id === patientId && r.doctor.id === doctorId);
+      const hasBooking = source.appointments.some(
+        (a) =>
+          a.patient.id === patientId &&
+          a.doctor.id === doctorId &&
+          a.status === 'BOOKED',
+      );
+      if (!hasReception && !hasBooking) deny();
+    }
+    function existingRecord(id: string) {
       const r = records.get(id);
       if (!r)
         throw new ApiError('NOT_FOUND', '진료 기록을 찾을 수 없습니다.', 404);
+      return r;
+    }
+    function readableRecord(id: string, doctorId: string) {
+      const r = existingRecord(id);
+      const v = source.visits.get(r.visitId);
+      if (!v) throw new ApiError('NOT_FOUND', '진료를 찾을 수 없습니다.', 404);
+      requirePatientAccess(v.patient.id, doctorId);
+      return r;
+    }
+    function ownedRecord(id: string, doctorId: string) {
+      const r = existingRecord(id);
       const v = visit(r.visitId, doctorId);
       if (v.status !== 'COMPLETED')
         throw new ApiError(
@@ -114,7 +137,7 @@ export function createMockClinical(source: {
     return {
       async version(id, n, signal) {
         const u = await ready(signal);
-        ownedRecord(id, u.doctorId);
+        readableRecord(id, u.doctorId);
         if (!Number.isInteger(n) || n < 1)
           throw new ApiError('VALIDATION_ERROR', '버전을 확인해 주세요.', 400);
         const v = versions.get(id)?.find((v) => v.versionNo === n);
@@ -267,17 +290,7 @@ export function createMockClinical(source: {
       },
       async history(patientId, cursor = {}, signal) {
         const u = await ready(signal);
-        if (
-          !source
-            .rows()
-            .some(
-              (r) => r.patient.id === patientId && r.doctor.id === u.doctorId,
-            ) &&
-          !source.appointments.some(
-            (a) => a.patient.id === patientId && a.doctor.id === u.doctorId,
-          )
-        )
-          return deny();
+        requirePatientAccess(patientId, u.doctorId);
         const items = [...records.values()]
           .flatMap((r) => {
             const v = source.visits.get(r.visitId);
@@ -382,15 +395,7 @@ export function createMockClinical(source: {
       },
       async record(id, signal) {
         const u = await ready(signal);
-        const record = records.get(id);
-        if (!record)
-          throw new ApiError(
-            'NOT_FOUND',
-            '기록 원본이 없는 과거 Mock 진료입니다.',
-            404,
-          );
-        visit(record.visitId, u.doctorId);
-        return structuredClone(record);
+        return structuredClone(readableRecord(id, u.doctorId));
       },
     };
   };
